@@ -1,4 +1,5 @@
 const { client } = require('./modbusClient');
+const config = require('../../config');
 
 /**
  * Read coils (discrete outputs) from Modbus device
@@ -8,6 +9,12 @@ const { client } = require('./modbusClient');
  */
 async function readCoils(startAddress, count) {
   try {
+    // Ensure client is properly configured before reading
+    if (client.isOpen) {
+      client.setID(config.modbus.slaveId);
+      client.setTimeout(config.modbus.timeout);
+    }
+    
     const data = await client.readCoils(startAddress, count);
     
     const timestamp = new Date().toISOString();
