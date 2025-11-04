@@ -204,21 +204,26 @@ init_deployment() {
         # Create directory
         eval "${SSH_CMD} ${PI_SSH} 'mkdir -p ${REMOTE_PATH}'"
         
-        # Copy files (excluding .git)
+        # Copy files (excluding .git and node_modules, but including .env)
         print_info "Copying files to remote host..."
-        eval "${RSYNC_CMD} -av --exclude='.git' --exclude='node_modules' ./ ${PI_SSH}:${REMOTE_PATH}/"
+        eval "${RSYNC_CMD} -av --exclude='.git' --exclude='node_modules' --exclude='.env.local' ./ ${PI_SSH}:${REMOTE_PATH}/"
         
         if [ $? -eq 0 ]; then
-            print_success "Files copied successfully"
+            print_success "Files copied successfully (including .env)"
         else
             print_error "Failed to copy files"
             exit 1
         fi
     fi
     
-    # Upload .env file to server
-    print_info "Uploading .env file to server..."
-    eval "${SCP_CMD} .env ${PI_SSH}:${REMOTE_PATH}/.env"
+    # Ensure .env file is uploaded to server (redundant check)
+    print_info "Ensuring .env file is on server..."
+    if [ -f .env ]; then
+        eval "${SCP_CMD} .env ${PI_SSH}:${REMOTE_PATH}/.env"
+    else
+        print_error ".env file not found locally!"
+        exit 1
+    fi
     if [ $? -eq 0 ]; then
         print_success ".env file uploaded successfully"
     else
@@ -292,23 +297,27 @@ update_deployment() {
         
         # Copy updated files
         print_info "Copying updated files..."
-        eval "${RSYNC_CMD} -av --exclude='.git' --exclude='node_modules' ./ ${PI_SSH}:${REMOTE_PATH}/"
+        eval "${RSYNC_CMD} -av --exclude='.git' --exclude='node_modules' --exclude='.env.local' ./ ${PI_SSH}:${REMOTE_PATH}/"
         
         if [ $? -eq 0 ]; then
-            print_success "Files updated successfully"
+            print_success "Files updated successfully (including .env)"
         else
             print_error "Failed to update files"
             exit 1
         fi
     fi
     
-    # Always upload .env file during update
-    print_info "Uploading latest .env file to server..."
-    eval "${SCP_CMD} .env ${PI_SSH}:${REMOTE_PATH}/.env"
-    if [ $? -eq 0 ]; then
-        print_success ".env file updated successfully"
+    # Always upload .env file during update (ensure it's there)
+    print_info "Ensuring latest .env file is on server..."
+    if [ -f .env ]; then
+        eval "${SCP_CMD} .env ${PI_SSH}:${REMOTE_PATH}/.env"
+        if [ $? -eq 0 ]; then
+            print_success ".env file updated successfully"
+        else
+            print_warning "Failed to update .env file (continuing anyway)"
+        fi
     else
-        print_warning "Failed to update .env file (continuing anyway)"
+        print_warning ".env file not found locally!"
     fi
     
     # Rebuild and restart container
