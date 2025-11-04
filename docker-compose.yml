@@ -34,5 +34,11 @@ services:
         max-size: "10m"
         max-file: "3"
     
-    # Network mode (optional)
+    # Network mode - using 'host' mode allows direct access to serial devices
+    # and makes port 3000 directly accessible on the host
+    # If you prefer bridge mode, comment out 'network_mode: host' and uncomment 'ports' below
     network_mode: host
+    
+    # Port mapping (only needed if NOT using network_mode: host)
+    # ports:
+    #   - "3000:3000"

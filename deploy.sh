@@ -80,6 +80,136 @@ check_ssh() {
     fi
 }
 
+# Function to configure firewall for port 3000
+configure_firewall() {
+    print_info "=== Configuring firewall for port 3000 ==="
+    
+    # Check if ufw is installed
+    if eval "${SSH_CMD} ${PI_SSH} 'command -v ufw'" &>/dev/null; then
+        print_info "UFW firewall detected"
+        
+        # Check if UFW is active
+        UFW_STATUS=$(eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S ufw status'" 2>/dev/null | grep -i "Status:")
+        
+        if echo "$UFW_STATUS" | grep -qi "active"; then
+            print_info "UFW is active, checking port 3000..."
+            
+            # Check if port 3000 is already allowed
+            if eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S ufw status'" | grep -q "3000"; then
+                print_success "Port 3000 is already allowed in UFW"
+            else
+                print_info "Opening port 3000 in UFW..."
+                eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S ufw allow 3000/tcp'"
+                if [ $? -eq 0 ]; then
+                    print_success "Port 3000 opened successfully in UFW"
+                else
+                    print_warning "Failed to open port 3000 in UFW"
+                fi
+            fi
+        else
+            print_info "UFW is installed but not active"
+        fi
+    else
+        print_info "UFW not found, checking iptables..."
+        
+        # Check if iptables has rules
+        IPTABLES_RULES=$(eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S iptables -L -n'" 2>/dev/null)
+        
+        if echo "$IPTABLES_RULES" | grep -q "3000"; then
+            print_success "Port 3000 appears to be configured in iptables"
+        else
+            print_info "Adding iptables rule for port 3000..."
+            eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S iptables -A INPUT -p tcp --dport 3000 -j ACCEPT'"
+            
+            # Try to save iptables rules (method varies by distro)
+            eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S sh -c \"iptables-save > /etc/iptables/rules.v4\"'" 2>/dev/null || \
+            eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S netfilter-persistent save'" 2>/dev/null || \
+            print_warning "Could not persist iptables rules (may reset on reboot)"
+            
+            print_success "Port 3000 configured in iptables"
+        fi
+    fi
+    
+    print_success "Firewall configuration completed"
+}
+
+# Function to check if API is accessible remotely
+check_api_access() {
+    print_info "=== Checking API accessibility ==="
+    
+    # Get Raspberry Pi's IP address
+    PI_IP=$(eval "${SSH_CMD} ${PI_SSH} \"hostname -I | awk '{print \$1}'\"" 2>/dev/null | tr -d '[:space:]')
+    
+    if [ -z "$PI_IP" ]; then
+        print_warning "Could not determine Raspberry Pi IP address"
+        return 1
+    fi
+    
+    print_info "Raspberry Pi IP: ${PI_IP}"
+    
+    # Wait for application to start
+    print_info "Waiting for application to start (5 seconds)..."
+    sleep 5
+    
+    # Check if port 3000 is listening on the Pi
+    print_info "Checking if port 3000 is listening on Raspberry Pi..."
+    PORT_CHECK=$(eval "${SSH_CMD} ${PI_SSH} 'ss -tulpn | grep :3000 || netstat -tulpn | grep :3000'" 2>/dev/null)
+    
+    if [ -n "$PORT_CHECK" ]; then
+        print_success "Port 3000 is listening on Raspberry Pi"
+        echo "$PORT_CHECK"
+    else
+        print_warning "Port 3000 does not appear to be listening"
+        print_info "Checking Docker container status..."
+        eval "${SSH_CMD} ${PI_SSH} 'cd ${REMOTE_PATH} && docker compose ps'"
+        return 1
+    fi
+    
+    # Try to access the API from the remote Pi itself (localhost test)
+    print_info "Testing API access from localhost on Raspberry Pi..."
+    LOCALHOST_TEST=$(eval "${SSH_CMD} ${PI_SSH} 'curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/health --max-time 5'" 2>/dev/null)
+    
+    if [ "$LOCALHOST_TEST" = "200" ]; then
+        print_success "API is accessible on localhost (HTTP 200)"
+    else
+        print_warning "API localhost test returned: ${LOCALHOST_TEST}"
+    fi
+    
+    # Try to access from the machine running this script
+    print_info "Testing remote API access from this machine..."
+    if command -v curl &> /dev/null; then
+        REMOTE_TEST=$(curl -s -o /dev/null -w "%{http_code}" "http://${PI_IP}:3000/health" --max-time 10 2>/dev/null)
+        
+        if [ "$REMOTE_TEST" = "200" ]; then
+            print_success "✅ API is accessible remotely from this machine!"
+            print_success "API URL: http://${PI_IP}:3000"
+            echo ""
+            print_info "You can test the API with:"
+            echo "  curl http://${PI_IP}:3000/"
+            echo "  curl http://${PI_IP}:3000/health"
+            echo "  curl http://${PI_IP}:3000/api/coils/latest"
+            echo ""
+        else
+            print_warning "Remote API test returned: ${REMOTE_TEST}"
+            print_info "This could be due to:"
+            echo "  1. Firewall blocking the connection (router/network firewall)"
+            echo "  2. Docker network configuration"
+            echo "  3. Application not fully started yet"
+            echo ""
+            print_info "Try accessing: http://${PI_IP}:3000/health"
+        fi
+    else
+        print_warning "curl not found on this machine, cannot test remote access"
+        print_info "Please manually test: http://${PI_IP}:3000/health"
+    fi
+    
+    # Show additional network information
+    print_info "Network binding information:"
+    eval "${SSH_CMD} ${PI_SSH} 'cd ${REMOTE_PATH} && docker compose exec -T meter-mqtt netstat -tulpn 2>/dev/null | grep :3000 || ss -tulpn | grep :3000'" 2>/dev/null || print_warning "Could not retrieve network binding info"
+    
+    return 0
+}
+
 # Function to prepare server environment
 prepare_server() {
     print_info "=== Preparing server environment ==="
@@ -90,7 +220,7 @@ prepare_server() {
     
     # Install essential packages
     print_info "Installing essential packages..."
-    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S apt-get install -y curl wget ca-certificates gnupg lsb-release'" || print_warning "Some packages may not have been installed"
+    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S apt-get install -y curl wget ca-certificates gnupg lsb-release net-tools'" || print_warning "Some packages may not have been installed"
     
     print_success "Server preparation completed"
 }
@@ -262,6 +392,12 @@ init_deployment() {
         exit 1
     fi
     
+    # Configure firewall for port 3000
+    configure_firewall
+    
+    # Check API accessibility
+    check_api_access
+    
     # Show logs
     print_info "Showing initial logs (Ctrl+C to exit)..."
     sleep 2
@@ -334,6 +470,12 @@ update_deployment() {
         exit 1
     fi
     
+    # Configure firewall for port 3000 (in case it's not configured)
+    configure_firewall
+    
+    # Check API accessibility
+    check_api_access
+    
     # Show logs
     print_info "Showing logs (Ctrl+C to exit)..."
     sleep 2
@@ -400,6 +542,21 @@ restart_app() {
     
     eval "${SSH_CMD} ${PI_SSH} 'cd ${REMOTE_PATH} && docker compose restart'"
     print_success "Application restarted"
+    
+    # Check API accessibility after restart
+    check_api_access
+}
+
+# Function to check firewall and API access
+check_firewall_and_api() {
+    print_info "=== Checking firewall and API accessibility ==="
+    
+    if ! check_ssh; then
+        exit 1
+    fi
+    
+    configure_firewall
+    check_api_access
 }
 
 # Main script logic
@@ -425,8 +582,11 @@ case "$1" in
     restart)
         restart_app
         ;;
+    check)
+        check_firewall_and_api
+        ;;
     *)
-        echo "Usage: $0 {init|update|logs|status|start|stop|restart}"
+        echo "Usage: $0 {init|update|logs|status|start|stop|restart|check}"
         echo ""
         echo "Commands:"
         echo "  init     - Initial deployment (clone repo and start application)"
@@ -436,6 +596,7 @@ case "$1" in
         echo "  start    - Start the application"
         echo "  stop     - Stop the application"
         echo "  restart  - Restart the application"
+        echo "  check    - Check firewall configuration and API accessibility"
         exit 1
         ;;
 esac
