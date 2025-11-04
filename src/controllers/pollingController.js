@@ -1,3 +1,4 @@
+const readCoils = require('../utils/readCoils');
 const readInputRegisters = require('../utils/readInputRegisters');
 const readHoldingRegisters = require('../utils/readHoldingRegisters');
 const config = require('../../config');
@@ -6,15 +7,13 @@ const config = require('../../config');
 let pollingInterval = null;
 let isPolling = false;
 let latestData = {
+  coils: null,
   inputRegisters: null,
   holdingRegisters: null
 };
 let logs = [];
-const MAX_LOGS = 100; // Keep last 100 log entries
+const MAX_LOGS = 100;
 
-/**
- * Add log entry
- */
 function addLog(type, message, data = null) {
   const logEntry = {
     timestamp: new Date().toISOString(),
@@ -25,7 +24,6 @@ function addLog(type, message, data = null) {
   
   logs.push(logEntry);
   
-  // Keep only last MAX_LOGS entries
   if (logs.length > MAX_LOGS) {
     logs = logs.slice(-MAX_LOGS);
   }
@@ -33,14 +31,7 @@ function addLog(type, message, data = null) {
   console.log(`[${logEntry.timestamp}] [${type}] ${message}`);
 }
 
-/**
- * Start polling loop
- * @param {number} startAddress - Starting register address
- * @param {number} endAddress - Ending register address
- * @param {number} interval - Polling interval in milliseconds (optional)
- * @param {string} type - Type of read: 'input', 'holding', or 'both' (optional, default: 'both')
- */
-function startPolling(startAddress, endAddress, interval = null, type = 'both') {
+function startPollingLoop(startAddress, endAddress, interval = null, type = 'both') {
   if (isPolling) {
     addLog('WARNING', 'Polling is already running');
     return {
@@ -60,13 +51,23 @@ function startPolling(startAddress, endAddress, interval = null, type = 'both') 
   
   addLog('INFO', `Starting polling loop: Register ${startAddress}-${endAddress} (count: ${count}), type: ${type}, interval: ${pollInterval}ms`);
   
-  // Function to perform the polling
   const poll = async () => {
     try {
       const results = {};
       
-      // Read input registers if requested
-      if (type === 'input' || type === 'both') {
+      if (type === 'coils') {
+        const coilResult = await readCoils(startAddress, count);
+        results.coils = coilResult;
+        latestData.coils = coilResult;
+        
+        if (coilResult.success) {
+          addLog('SUCCESS', `Polled coils ${startAddress}-${endAddress}`, coilResult.data);
+        } else {
+          addLog('ERROR', `Failed to poll coils ${startAddress}-${endAddress}`, coilResult.error);
+        }
+      }
+      
+      if (type === 'input') {
         const inputResult = await readInputRegisters(startAddress, count);
         results.inputRegisters = inputResult;
         latestData.inputRegisters = inputResult;
@@ -78,8 +79,7 @@ function startPolling(startAddress, endAddress, interval = null, type = 'both') 
         }
       }
       
-      // Read holding registers if requested
-      if (type === 'holding' || type === 'both') {
+      if (type === 'holding') {
         const holdingResult = await readHoldingRegisters(startAddress, count);
         results.holdingRegisters = holdingResult;
         latestData.holdingRegisters = holdingResult;
@@ -96,10 +96,8 @@ function startPolling(startAddress, endAddress, interval = null, type = 'both') 
     }
   };
   
-  // Perform first poll immediately
   poll();
   
-  // Set up interval for continuous polling
   pollingInterval = setInterval(poll, pollInterval);
   isPolling = true;
   
@@ -116,10 +114,7 @@ function startPolling(startAddress, endAddress, interval = null, type = 'both') 
   };
 }
 
-/**
- * Stop polling loop
- */
-function stopPolling() {
+function stopPollingLoop() {
   if (!isPolling) {
     addLog('WARNING', 'Polling is not running');
     return {
@@ -140,10 +135,7 @@ function stopPolling() {
   };
 }
 
-/**
- * Get polling status
- */
-function getPollingStatus() {
+function getStatus() {
   return {
     isPolling,
     latestData,
@@ -151,28 +143,18 @@ function getPollingStatus() {
   };
 }
 
-/**
- * Get latest data
- */
 function getLatestData() {
   return latestData;
 }
 
-/**
- * Get logs
- * @param {number} limit - Number of recent logs to return (optional)
- */
-function getLogs(limit = null) {
+function getLogsData(limit = null) {
   if (limit && limit > 0) {
     return logs.slice(-limit);
   }
   return logs;
 }
 
-/**
- * Clear logs
- */
-function clearLogs() {
+function clearLogsData() {
   logs = [];
   addLog('INFO', 'Logs cleared');
   return {
@@ -181,11 +163,136 @@ function clearLogs() {
   };
 }
 
+async function startPolling(req, res) {
+  try {
+    const type = req.params.type;
+    const startAddress = parseInt(req.params.startAddress);
+    const endAddress = parseInt(req.params.endAddress);
+    const interval = req.body.interval ? parseInt(req.body.interval) : null;
+    
+    // Validate type
+    if (!['coils', 'input', 'holding'].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid type. Must be "coils", "input", or "holding".'
+      });
+    }
+    
+    if (isNaN(startAddress) || isNaN(endAddress)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid register addresses. Both must be numbers.'
+      });
+    }
+    
+    if (startAddress < 0 || endAddress < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Register addresses must be non-negative.'
+      });
+    }
+    
+    if (startAddress > endAddress) {
+      return res.status(400).json({
+        success: false,
+        message: 'Start address must be less than or equal to end address.'
+      });
+    }
+    
+    if (interval && (isNaN(interval) || interval < 100)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Interval must be a number >= 100ms.'
+      });
+    }
+    
+    const result = startPollingLoop(startAddress, endAddress, interval, type);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error starting polling',
+      error: error.message
+    });
+  }
+}
+
+async function stopPolling(req, res) {
+  try {
+    const result = stopPollingLoop();
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error stopping polling',
+      error: error.message
+    });
+  }
+}
+
+async function getPollingStatus(req, res) {
+  try {
+    const status = getStatus();
+    res.json({
+      success: true,
+      status
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error getting polling status',
+      error: error.message
+    });
+  }
+}
+
+async function getLogs(req, res) {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const logs = getLogsData(limit);
+    
+    res.json({
+      success: true,
+      count: logs.length,
+      logs
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving logs',
+      error: error.message
+    });
+  }
+}
+
+async function clearLogs(req, res) {
+  try {
+    const result = clearLogsData();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error clearing logs',
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   startPolling,
   stopPolling,
   getPollingStatus,
-  getLatestData,
   getLogs,
-  clearLogs
+  clearLogs,
+  getLatestData
 };

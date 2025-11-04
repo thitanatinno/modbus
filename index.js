@@ -2,7 +2,7 @@ const express = require('express');
 const { connect, disconnect } = require('./src/utils/modbusClient');
 
 // Import routes
-const coilsRoutes = require('./src/routes/coils');
+const readRoutes = require('./src/routes/read');
 const pollingRoutes = require('./src/routes/polling');
 
 const app = express();
@@ -19,7 +19,7 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use('/api/coils', coilsRoutes);
+app.use('/api/read', readRoutes);
 app.use('/api/polling', pollingRoutes);
 
 // Health check endpoint
@@ -34,14 +34,13 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     message: 'Modbus RS485 API Server',
-    version: '1.0.0',
+    version: '2.0.0',
     endpoints: {
-      coils: {
-        'GET /api/coils/latest': 'Get latest coils data from polling',
-        'GET /api/coils/read/:startAddress/:endAddress': 'Read coils from specific register range (e.g., /api/coils/read/604/610)'
+      read: {
+        'GET /api/read/:type/:startAddress/:endAddress': 'Read registers by type (coils, holding, input) from specific range (e.g., /api/read/input/604/610)'
       },
       polling: {
-        'POST /api/polling/start/:startAddress/:endAddress': 'Start polling loop (e.g., /api/polling/start/604/610)',
+        'POST /api/polling/start/:type/:startAddress/:endAddress': 'Start polling loop by type (coils, input, holding) - Optional body: {interval?: number}',
         'POST /api/polling/stop': 'Stop polling loop',
         'GET /api/polling/status': 'Get polling status',
         'GET /api/polling/logs': 'Get real-time logs (optional query: ?limit=50)',
