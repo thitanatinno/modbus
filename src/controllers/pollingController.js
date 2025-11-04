@@ -1,10 +1,14 @@
 const readCoils = require('../utils/readCoils');
+const readHoldingRegisters = require('../utils/readHoldingRegisters');
 const config = require('../../config');
 
 // State management for polling
 let pollingInterval = null;
 let isPolling = false;
-let latestData = null;
+let latestData = {
+  coils: null,
+  holdingRegisters: null
+};
 let logs = [];
 const MAX_LOGS = 100; // Keep last 100 log entries
 
@@ -34,8 +38,9 @@ function addLog(type, message, data = null) {
  * @param {number} startAddress - Starting register address
  * @param {number} endAddress - Ending register address
  * @param {number} interval - Polling interval in milliseconds (optional)
+ * @param {string} type - Type of read: 'coils', 'holding', or 'both' (optional, default: 'both')
  */
-function startPolling(startAddress, endAddress, interval = null) {
+function startPolling(startAddress, endAddress, interval = null, type = 'both') {
   if (isPolling) {
     addLog('WARNING', 'Polling is already running');
     return {
@@ -44,7 +49,8 @@ function startPolling(startAddress, endAddress, interval = null) {
       currentConfig: {
         startAddress,
         endAddress,
-        count: endAddress - startAddress + 1
+        count: endAddress - startAddress + 1,
+        type
       }
     };
   }
@@ -52,19 +58,39 @@ function startPolling(startAddress, endAddress, interval = null) {
   const count = endAddress - startAddress + 1;
   const pollInterval = interval || config.reading.interval || 5000;
   
-  addLog('INFO', `Starting polling loop: Register ${startAddress}-${endAddress} (count: ${count}), interval: ${pollInterval}ms`);
+  addLog('INFO', `Starting polling loop: Register ${startAddress}-${endAddress} (count: ${count}), type: ${type}, interval: ${pollInterval}ms`);
   
   // Function to perform the polling
   const poll = async () => {
     try {
-      const result = await readCoils(startAddress, count);
-      latestData = result;
+      const results = {};
       
-      if (result.success) {
-        addLog('SUCCESS', `Polled registers ${startAddress}-${endAddress}`, result.data);
-      } else {
-        addLog('ERROR', `Failed to poll registers ${startAddress}-${endAddress}`, result.error);
+      // Read coils if requested
+      if (type === 'coils' || type === 'both') {
+        const coilResult = await readCoils(startAddress, count);
+        results.coils = coilResult;
+        latestData.coils = coilResult;
+        
+        if (coilResult.success) {
+          addLog('SUCCESS', `Polled coils ${startAddress}-${endAddress}`, coilResult.data);
+        } else {
+          addLog('ERROR', `Failed to poll coils ${startAddress}-${endAddress}`, coilResult.error);
+        }
       }
+      
+      // Read holding registers if requested
+      if (type === 'holding' || type === 'both') {
+        const holdingResult = await readHoldingRegisters(startAddress, count);
+        results.holdingRegisters = holdingResult;
+        latestData.holdingRegisters = holdingResult;
+        
+        if (holdingResult.success) {
+          addLog('SUCCESS', `Polled holding registers ${startAddress}-${endAddress}`, holdingResult.data);
+        } else {
+          addLog('ERROR', `Failed to poll holding registers ${startAddress}-${endAddress}`, holdingResult.error);
+        }
+      }
+      
     } catch (error) {
       addLog('ERROR', `Polling error: ${error.message}`);
     }
@@ -84,6 +110,7 @@ function startPolling(startAddress, endAddress, interval = null) {
       startAddress,
       endAddress,
       count,
+      type,
       interval: pollInterval
     }
   };

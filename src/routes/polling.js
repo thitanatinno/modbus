@@ -12,13 +12,15 @@ const {
  * POST /api/polling/start/:startAddress/:endAddress
  * Start polling loop for specific register range
  * Example: POST /api/polling/start/604/610
- * Optional body: { "interval": 5000 }
+ * Optional body: { "interval": 5000, "type": "both" }
+ * type can be: "coils", "holding", or "both" (default: "both")
  */
 router.post('/start/:startAddress/:endAddress', (req, res) => {
   try {
     const startAddress = parseInt(req.params.startAddress);
     const endAddress = parseInt(req.params.endAddress);
     const interval = req.body.interval ? parseInt(req.body.interval) : null;
+    const type = req.body.type || 'both';
     
     // Validate parameters
     if (isNaN(startAddress) || isNaN(endAddress)) {
@@ -49,7 +51,14 @@ router.post('/start/:startAddress/:endAddress', (req, res) => {
       });
     }
     
-    const result = startPolling(startAddress, endAddress, interval);
+    if (!['coils', 'holding', 'both'].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Type must be "coils", "holding", or "both".'
+      });
+    }
+    
+    const result = startPolling(startAddress, endAddress, interval, type);
     
     if (result.success) {
       res.json(result);
