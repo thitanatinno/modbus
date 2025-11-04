@@ -148,6 +148,65 @@ Modbus Device    RS485 Adapter
     GND     <-->  GND (if available)
 ```
 
+## Docker Deployment
+
+### Quick Start (Raspberry Pi)
+
+1. **Setup SSH key authentication:**
+```bash
+ssh-copy-id pi@192.168.20.228
+```
+
+2. **Make deploy script executable:**
+```bash
+chmod +x deploy.sh
+```
+
+3. **Update repository URL in `deploy.sh`:**
+Edit the `REPO_URL` variable with your Git repository URL.
+
+4. **Initial deployment:**
+```bash
+./deploy.sh init
+```
+
+5. **Update existing deployment:**
+```bash
+./deploy.sh update
+```
+
+### Deployment Commands
+
+```bash
+./deploy.sh init      # Initial deployment
+./deploy.sh update    # Update deployment
+./deploy.sh logs      # View logs
+./deploy.sh status    # Check status
+./deploy.sh start     # Start application
+./deploy.sh stop      # Stop application
+./deploy.sh restart   # Restart application
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
+
+## Local Docker Usage
+
+### Build and run locally:
+```bash
+docker compose build
+docker compose up -d
+```
+
+### View logs:
+```bash
+docker compose logs -f
+```
+
+### Stop container:
+```bash
+docker compose down
+```
+
 ## License
 
 ISC

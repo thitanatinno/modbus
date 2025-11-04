@@ -1,0 +1,26 @@
+{
+  "name": "meter-mqtt",
+  "version": "1.0.0",
+  "description": "Simple Node.js program to read Modbus values through RS485",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [
+    "modbus",
+    "rs485",
+    "serial",
+    "rtu"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "modbus-serial": "^8.0.17",
+    "serialport": "^12.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  meter-mqtt:
+    build: .
+    container_name: meter-mqtt
+    restart: unless-stopped
+    
+    # Device mapping for RS485 serial port
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0  # Change to your serial port
+    
+    # Privileged mode for full device access (use with caution)
+    privileged: true
+    
+    # Load environment variables from .env file
+    env_file:
+      - .env
+    
+    # Environment variables (can override .env)
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - TZ=${TZ:-Asia/Bangkok}
+    
+    # Volumes for configuration and logs
+    volumes:
+      - ./config.js:/app/config.js:ro  # Mount config as read-only
+      - ./logs:/app/logs                # Optional: if you add logging
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Network mode (optional)
+    network_mode: host
