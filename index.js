@@ -113,10 +113,10 @@ async function startPolling() {
     await readHoldingRegisters();
     
     // Uncomment below to read input registers instead
-    // await readInputRegisters();
+     await readInputRegisters();
     
     // Uncomment below to read coils
-    // await readCoils();
+     await readCoils();
   }, config.reading.interval);
 }
 
