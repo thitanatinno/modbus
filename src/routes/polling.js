@@ -13,7 +13,7 @@ const {
  * Start polling loop for specific register range
  * Example: POST /api/polling/start/604/610
  * Optional body: { "interval": 5000, "type": "both" }
- * type can be: "coils", "holding", or "both" (default: "both")
+ * type can be: "input", "holding", or "both" (default: "both")
  */
 router.post('/start/:startAddress/:endAddress', (req, res) => {
   try {
@@ -51,10 +51,10 @@ router.post('/start/:startAddress/:endAddress', (req, res) => {
       });
     }
     
-    if (!['coils', 'holding', 'both'].includes(type)) {
+    if (!['input', 'holding', 'both'].includes(type)) {
       return res.status(400).json({
         success: false,
-        message: 'Type must be "coils", "holding", or "both".'
+        message: 'Type must be "input", "holding", or "both".'
       });
     }
     

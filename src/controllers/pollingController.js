@@ -1,4 +1,4 @@
-const readCoils = require('../utils/readCoils');
+const readInputRegisters = require('../utils/readInputRegisters');
 const readHoldingRegisters = require('../utils/readHoldingRegisters');
 const config = require('../../config');
 
@@ -6,7 +6,7 @@ const config = require('../../config');
 let pollingInterval = null;
 let isPolling = false;
 let latestData = {
-  coils: null,
+  inputRegisters: null,
   holdingRegisters: null
 };
 let logs = [];
@@ -38,7 +38,7 @@ function addLog(type, message, data = null) {
  * @param {number} startAddress - Starting register address
  * @param {number} endAddress - Ending register address
  * @param {number} interval - Polling interval in milliseconds (optional)
- * @param {string} type - Type of read: 'coils', 'holding', or 'both' (optional, default: 'both')
+ * @param {string} type - Type of read: 'input', 'holding', or 'both' (optional, default: 'both')
  */
 function startPolling(startAddress, endAddress, interval = null, type = 'both') {
   if (isPolling) {
@@ -65,16 +65,16 @@ function startPolling(startAddress, endAddress, interval = null, type = 'both') 
     try {
       const results = {};
       
-      // Read coils if requested
-      if (type === 'coils' || type === 'both') {
-        const coilResult = await readCoils(startAddress, count);
-        results.coils = coilResult;
-        latestData.coils = coilResult;
+      // Read input registers if requested
+      if (type === 'input' || type === 'both') {
+        const inputResult = await readInputRegisters(startAddress, count);
+        results.inputRegisters = inputResult;
+        latestData.inputRegisters = inputResult;
         
-        if (coilResult.success) {
-          addLog('SUCCESS', `Polled coils ${startAddress}-${endAddress}`, coilResult.data);
+        if (inputResult.success) {
+          addLog('SUCCESS', `Polled input registers ${startAddress}-${endAddress}`, inputResult.data);
         } else {
-          addLog('ERROR', `Failed to poll coils ${startAddress}-${endAddress}`, coilResult.error);
+          addLog('ERROR', `Failed to poll input registers ${startAddress}-${endAddress}`, inputResult.error);
         }
       }
       
