@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   meter-mqtt:
-    build: .
+    build: ./server
     container_name: meter-mqtt
     restart: unless-stopped
     
@@ -15,7 +15,7 @@ services:
     
     # Load environment variables from .env file
     env_file:
-      - .env
+      - ./server/.env
     
     # Environment variables (can override .env)
     environment:
@@ -24,8 +24,8 @@ services:
     
     # Volumes for configuration and logs
     volumes:
-      - ./config.js:/app/config.js:ro  # Mount config as read-only
-      - ./logs:/app/logs                # Optional: if you add logging
+      - ./server/config.js:/app/config.js:ro  # Mount config as read-only
+      - ./server/logs:/app/logs                # Optional: if you add logging
     
     # Logging configuration
     logging:

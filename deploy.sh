@@ -80,9 +80,9 @@ check_ssh() {
     fi
 }
 
-# Function to configure firewall for port 3000
+# Function to configure firewall for ports 3000 and 80
 configure_firewall() {
-    print_info "=== Configuring firewall for port 3000 ==="
+    print_info "=== Configuring firewall for ports 3000 (API) and 80 (HTTP) ==="
     
     # Check if ufw is installed
     if eval "${SSH_CMD} ${PI_SSH} 'command -v ufw'" &>/dev/null; then
@@ -92,7 +92,7 @@ configure_firewall() {
         UFW_STATUS=$(eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S ufw status'" 2>/dev/null | grep -i "Status:")
         
         if echo "$UFW_STATUS" | grep -qi "active"; then
-            print_info "UFW is active, checking port 3000..."
+            print_info "UFW is active, checking ports..."
             
             # Check if port 3000 is already allowed
             if eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S ufw status'" | grep -q "3000"; then
@@ -104,6 +104,19 @@ configure_firewall() {
                     print_success "Port 3000 opened successfully in UFW"
                 else
                     print_warning "Failed to open port 3000 in UFW"
+                fi
+            fi
+            
+            # Check if port 80 is already allowed
+            if eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S ufw status'" | grep -q "80"; then
+                print_success "Port 80 is already allowed in UFW"
+            else
+                print_info "Opening port 80 in UFW..."
+                eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S ufw allow 80/tcp'"
+                if [ $? -eq 0 ]; then
+                    print_success "Port 80 opened successfully in UFW"
+                else
+                    print_warning "Failed to open port 80 in UFW"
                 fi
             fi
         else
@@ -120,14 +133,21 @@ configure_firewall() {
         else
             print_info "Adding iptables rule for port 3000..."
             eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S iptables -A INPUT -p tcp --dport 3000 -j ACCEPT'"
-            
-            # Try to save iptables rules (method varies by distro)
-            eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S sh -c \"iptables-save > /etc/iptables/rules.v4\"'" 2>/dev/null || \
-            eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S netfilter-persistent save'" 2>/dev/null || \
-            print_warning "Could not persist iptables rules (may reset on reboot)"
-            
-            print_success "Port 3000 configured in iptables"
         fi
+        
+        if echo "$IPTABLES_RULES" | grep -q "80"; then
+            print_success "Port 80 appears to be configured in iptables"
+        else
+            print_info "Adding iptables rule for port 80..."
+            eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S iptables -A INPUT -p tcp --dport 80 -j ACCEPT'"
+        fi
+        
+        # Try to save iptables rules (method varies by distro)
+        eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S sh -c \"iptables-save > /etc/iptables/rules.v4\"'" 2>/dev/null || \
+        eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S netfilter-persistent save'" 2>/dev/null || \
+        print_warning "Could not persist iptables rules (may reset on reboot)"
+        
+        print_success "Ports configured in iptables"
     fi
     
     print_success "Firewall configuration completed"
@@ -218,11 +238,104 @@ prepare_server() {
     print_info "Updating package lists..."
     eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S apt-get update'" || print_warning "Failed to update package lists"
     
-    # Install essential packages
+    # Install essential packages (including nginx)
     print_info "Installing essential packages..."
-    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S apt-get install -y curl wget ca-certificates gnupg lsb-release net-tools'" || print_warning "Some packages may not have been installed"
+    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S apt-get install -y curl wget ca-certificates gnupg lsb-release net-tools nginx'" || print_warning "Some packages may not have been installed"
+    
+    # Ensure nginx is enabled and started
+    print_info "Configuring nginx..."
+    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S systemctl enable nginx'" || true
+    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S systemctl start nginx'" || true
+    
+    # Create web directory if it doesn't exist
+    print_info "Creating web directory..."
+    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S mkdir -p /var/www/html'"
+    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S chown -R ${PI_USER}:${PI_USER} /var/www/html'"
     
     print_success "Server preparation completed"
+}
+
+# Function to build and deploy React dashboard
+build_and_deploy_dashboard() {
+    print_info "=== Building and deploying React dashboard ==="
+    
+    # Check if Node.js is installed locally
+    if ! command -v node &> /dev/null; then
+        print_error "Node.js not found on local machine!"
+        print_info "Please install Node.js to build the React app"
+        return 1
+    fi
+    
+    # Build React app locally
+    print_info "Building React app locally..."
+    cd client
+    
+    # Install dependencies if needed
+    if [ ! -d "node_modules" ]; then
+        print_info "Installing client dependencies..."
+        npm install
+    fi
+    
+    # Build the app
+    print_info "Running production build..."
+    npm run build
+    
+    if [ $? -ne 0 ]; then
+        print_error "Failed to build React app"
+        cd ..
+        return 1
+    fi
+    
+    print_success "React app built successfully"
+    cd ..
+    
+    # Rename build folder to dashboard
+    print_info "Preparing dashboard folder..."
+    if [ -d "client/build" ]; then
+        # Remove old dashboard if exists
+        rm -rf client/dashboard 2>/dev/null || true
+        # Rename build to dashboard
+        mv client/build client/dashboard
+        print_success "Dashboard folder prepared"
+    else
+        print_error "Build folder not found!"
+        return 1
+    fi
+    
+    # Deploy to Raspberry Pi
+    print_info "Deploying dashboard to Raspberry Pi..."
+    
+    # Remove old dashboard on server
+    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S rm -rf /var/www/html/dashboard'" || true
+    
+    # Copy dashboard to server
+    eval "${RSYNC_CMD} -av --delete client/dashboard/ ${PI_SSH}:/tmp/dashboard/"
+    
+    if [ $? -ne 0 ]; then
+        print_error "Failed to copy dashboard to server"
+        return 1
+    fi
+    
+    # Move from tmp to final location with sudo
+    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S mv /tmp/dashboard /var/www/html/dashboard'"
+    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S chown -R www-data:www-data /var/www/html/dashboard'"
+    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S chmod -R 755 /var/www/html/dashboard'"
+    
+    if [ $? -eq 0 ]; then
+        print_success "Dashboard deployed successfully to /var/www/html/dashboard"
+        
+        # Get Raspberry Pi's IP address
+        PI_IP=$(eval "${SSH_CMD} ${PI_SSH} \"hostname -I | awk '{print \$1}'\"" 2>/dev/null | tr -d '[:space:]')
+        
+        if [ -n "$PI_IP" ]; then
+            print_success "Dashboard accessible at: http://${PI_IP}/dashboard"
+        fi
+    else
+        print_error "Failed to deploy dashboard"
+        return 1
+    fi
+    
+    return 0
 }
 
 # Function to initialize deployment (first time setup)
@@ -349,7 +462,7 @@ init_deployment() {
     # Ensure .env file is uploaded to server (redundant check)
     print_info "Ensuring .env file is on server..."
     if [ -f .env ]; then
-        eval "${SCP_CMD} .env ${PI_SSH}:${REMOTE_PATH}/.env"
+        eval "${SCP_CMD} .env ${PI_SSH}:${REMOTE_PATH}/server/.env"
     else
         print_error ".env file not found locally!"
         exit 1
@@ -363,7 +476,7 @@ init_deployment() {
     
     # Copy or update config if needed
     print_info "Setting up configuration..."
-    eval "${SSH_CMD} ${PI_SSH} 'cd ${REMOTE_PATH} && [ ! -f config.js ] && cp config.js config.js.example || true'"
+    eval "${SSH_CMD} ${PI_SSH} 'cd ${REMOTE_PATH}/server && [ ! -f config.js ] && cp config.js config.js.example || true'"
     
     # Find serial port
     print_info "Detecting serial ports..."
@@ -394,6 +507,9 @@ init_deployment() {
     
     # Configure firewall for port 3000
     configure_firewall
+    
+    # Build and deploy React dashboard
+    build_and_deploy_dashboard
     
     # Check API accessibility
     check_api_access
@@ -446,7 +562,7 @@ update_deployment() {
     # Always upload .env file during update (ensure it's there)
     print_info "Ensuring latest .env file is on server..."
     if [ -f .env ]; then
-        eval "${SCP_CMD} .env ${PI_SSH}:${REMOTE_PATH}/.env"
+        eval "${SCP_CMD} .env ${PI_SSH}:${REMOTE_PATH}/server/.env"
         if [ $? -eq 0 ]; then
             print_success ".env file updated successfully"
         else
@@ -472,6 +588,9 @@ update_deployment() {
     
     # Configure firewall for port 3000 (in case it's not configured)
     configure_firewall
+    
+    # Build and deploy React dashboard
+    build_and_deploy_dashboard
     
     # Check API accessibility
     check_api_access
@@ -559,6 +678,24 @@ check_firewall_and_api() {
     check_api_access
 }
 
+# Function to deploy only the dashboard
+deploy_dashboard_only() {
+    print_info "=== Deploying dashboard only ==="
+    
+    if ! check_ssh; then
+        exit 1
+    fi
+    
+    build_and_deploy_dashboard
+    
+    if [ $? -eq 0 ]; then
+        print_success "Dashboard deployment completed"
+    else
+        print_error "Dashboard deployment failed"
+        exit 1
+    fi
+}
+
 # Main script logic
 case "$1" in
     init)
@@ -566,6 +703,9 @@ case "$1" in
         ;;
     update)
         update_deployment
+        ;;
+    dashboard)
+        deploy_dashboard_only
         ;;
     logs)
         show_logs
@@ -586,17 +726,18 @@ case "$1" in
         check_firewall_and_api
         ;;
     *)
-        echo "Usage: $0 {init|update|logs|status|start|stop|restart|check}"
+        echo "Usage: $0 {init|update|dashboard|logs|status|start|stop|restart|check}"
         echo ""
         echo "Commands:"
-        echo "  init     - Initial deployment (clone repo and start application)"
-        echo "  update   - Update existing deployment (pull changes and restart)"
-        echo "  logs     - Show application logs"
-        echo "  status   - Show application status"
-        echo "  start    - Start the application"
-        echo "  stop     - Stop the application"
-        echo "  restart  - Restart the application"
-        echo "  check    - Check firewall configuration and API accessibility"
+        echo "  init      - Initial deployment (clone repo and start application)"
+        echo "  update    - Update existing deployment (pull changes and restart)"
+        echo "  dashboard - Build and deploy React dashboard only"
+        echo "  logs      - Show application logs"
+        echo "  status    - Show application status"
+        echo "  start     - Start the application"
+        echo "  stop      - Stop the application"
+        echo "  restart   - Restart the application"
+        echo "  check     - Check firewall configuration and API accessibility"
         exit 1
         ;;
 esac

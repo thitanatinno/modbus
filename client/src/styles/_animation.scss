@@ -1,0 +1,103 @@
+// Animation Mixins
+
+// Expand animation
+@mixin expand-animation($duration: 0.3s, $from: 0, $to: 100%) {
+  animation: expand $duration ease-in-out;
+  
+  @keyframes expand {
+    from {
+      width: $from;
+    }
+    to {
+      width: $to;
+    }
+  }
+}
+
+// Fade in animation
+@mixin fade-in-animation($duration: 0.5s) {
+  animation: fadeIn $duration ease-in;
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+// Shrink animation
+@mixin shrink-animation($duration: 0.2s) {
+  animation: shrink $duration ease-in-out;
+  
+  @keyframes shrink {
+    from {
+      transform: scale(1);
+    }
+    to {
+      transform: scale(0.95);
+    }
+  }
+}
+
+// Fade out animation
+@mixin fade-out-animation($duration: 0.3s) {
+  animation: fadeOut $duration ease-out;
+  
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+}
+
+// Slide in from left
+@mixin slide-in-left($duration: 0.4s) {
+  animation: slideInLeft $duration ease-out;
+  
+  @keyframes slideInLeft {
+    from {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+}
+
+// Slide in from right
+@mixin slide-in-right($duration: 0.4s) {
+  animation: slideInRight $duration ease-out;
+  
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+}
+
+// Pulse animation
+@mixin pulse-animation($duration: 1s) {
+  animation: pulse $duration infinite;
+  
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+}

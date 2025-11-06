@@ -4,7 +4,6 @@ const readInputRegisters = require('../utils/readInputRegisters');
 
 const TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 const RETRY_DELAY_MS = 1000; // 1 second between retries
-
 /**
  * Read registers with retry logic
  * @param {string} type - Type of register (coils, holding, input)
@@ -14,12 +13,10 @@ const RETRY_DELAY_MS = 1000; // 1 second between retries
  */
 async function readWithRetry(type, startAddress, count) {
   const startTime = Date.now();
-  let attemptCount = 0;
-  
+  let attemptCount = 0; 
   while (Date.now() - startTime < TIMEOUT_MS) {
     attemptCount++;
-    let result;
-    
+    let result;    
     try {
       // Read based on type
       switch (type) {
@@ -32,8 +29,7 @@ async function readWithRetry(type, startAddress, count) {
         case 'input':
           result = await readInputRegisters(startAddress, count);
           break;
-      }
-      
+      } 
       // Return immediately on first success
       if (result && result.success) {
         return {

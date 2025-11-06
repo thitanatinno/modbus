@@ -1,0 +1,57 @@
+// Color Palette Definitions
+$colors: (
+  // Primary Colors
+  "primary-color-1": #206246,
+  "primary-color-2": #11955E,
+  "primary-color-3": #45CE69,
+  "primary-color-4": #78D988,
+  
+  // Secondary Colors
+  "secondary-color-1": #DE5C8E,
+  "secondary-color-2": #E979A4,
+  "secondary-color-3": #F798BD,
+  "secondary-color-4": #F7B7CF,
+  
+  // Activity Colors
+  "active-300": #00AA55,
+  "active-200": #22CC77,
+  "active-100": #44EE99,
+  "inactive": #999999,
+  "warning": #FF9800,
+  
+  // Basic Colors
+  "black": #000000,
+  "white": #FFFFFF,
+  "gray-100": #F5F5F5,
+  "gray-200": #EEEEEE,
+  "gray-300": #E0E0E0,
+  "gray-400": #BDBDBD,
+  "gray-500": #9E9E9E,
+  "gray-600": #757575,
+  "gray-700": #616161,
+  "gray-800": #424242,
+  "gray-900": #212121
+);
+
+// Mixins for color palette usage
+
+// Text color mixin
+@mixin text-color-palette($color-name) {
+  color: map-get($colors, $color-name);
+}
+
+// Background color mixin
+@mixin bg-color-palette($color-name) {
+  background-color: map-get($colors, $color-name);
+}
+
+// Border color mixin
+@mixin border-color-palette($color-name, $width: 1px, $style: solid) {
+  border: $width $style map-get($colors, $color-name);
+}
+
+// Shadow palette mixin
+@mixin shawdow-palette($color-name, $opacity: 0.2) {
+  $color: map-get($colors, $color-name);
+  box-shadow: 0 2px 8px rgba($color, $opacity);
+}

@@ -1,0 +1,38 @@
+// Main SCSS - Import all style utilities
+@import './color';
+@import './font';
+@import './animation';
+
+// Global Reset
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+// Global Body Styles
+body {
+  @include font-family('Roboto', sans-serif);
+  @include font-size-palette('body-1');
+  @include bg-color-palette('gray-100');
+  @include text-color-palette('gray-900');
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// Common Utility Classes (Optional)
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

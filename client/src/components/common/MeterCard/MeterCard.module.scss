@@ -1,0 +1,99 @@
+@import "src/styles/main";
+
+.Container {
+  @include bg-color-palette("white");
+  @include shawdow-palette("gray-400", 0.15);
+  @include fade-in-animation(0.3s);
+  
+  padding: 24px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  min-width: 250px;
+  
+  &:hover {
+    @include shawdow-palette("primary-color-2", 0.25);
+    transform: translateY(-4px);
+  }
+}
+
+.Hovered {
+  @include shawdow-palette("primary-color-2", 0.25);
+  transform: translateY(-4px);
+}
+
+.Header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.Icon {
+  @include bg-color-palette("primary-color-4");
+  @include text-color-palette("primary-color-1");
+  
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.Title {
+  @include font-size-palette("body-1");
+  @include text-color-palette("gray-700");
+  @include font-weight(500);
+  
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ValueSection {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.Value {
+  @include font-size-palette("headline-2");
+  @include text-color-palette("primary-color-1");
+  @include font-weight(700);
+  
+  line-height: 1;
+}
+
+.Unit {
+  @include font-size-palette("body-1");
+  @include text-color-palette("gray-600");
+  @include font-weight(400);
+}
+
+.Status {
+  @include font-size-palette("body-3");
+  @include font-weight(600);
+  
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+  &.active {
+    @include bg-color-palette("active-200");
+    @include text-color-palette("white");
+  }
+  
+  &.inactive {
+    @include bg-color-palette("inactive");
+    @include text-color-palette("white");
+  }
+  
+  &.warning {
+    @include bg-color-palette("warning");
+    @include text-color-palette("white");
+  }
+}

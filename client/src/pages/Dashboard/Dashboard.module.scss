@@ -1,0 +1,232 @@
+@import "src/styles/main";
+
+.Container {
+  @include fade-in-animation(0.5s);
+  
+  min-height: 100vh;
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.Header {
+  margin-bottom: 32px;
+}
+
+.Title {
+  @include font-size-palette("headline-1");
+  @include text-color-palette("primary-color-1");
+  @include font-weight(700);
+  
+  margin: 0 0 16px 0;
+}
+
+.StatusBar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.StatusIndicator {
+  @include font-size-palette("body-1");
+  @include font-weight(600);
+  
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &.Active {
+    @include bg-color-palette("active-200");
+    @include text-color-palette("white");
+  }
+  
+  &.Inactive {
+    @include bg-color-palette("inactive");
+    @include text-color-palette("white");
+  }
+}
+
+.LastUpdate {
+  @include font-size-palette("body-2");
+  @include text-color-palette("gray-600");
+}
+
+.ControlPanel {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.ControlButton {
+  @include font-size-palette("body-1");
+  @include font-weight(600);
+  @include shawdow-palette("gray-400", 0.2);
+  
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &.Start {
+    @include bg-color-palette("primary-color-2");
+    @include text-color-palette("white");
+    
+    &:hover:not(:disabled) {
+      @include bg-color-palette("primary-color-1");
+      transform: translateY(-2px);
+      @include shawdow-palette("primary-color-2", 0.3);
+    }
+  }
+  
+  &.Stop {
+    @include bg-color-palette("secondary-color-2");
+    @include text-color-palette("white");
+    
+    &:hover:not(:disabled) {
+      @include bg-color-palette("secondary-color-1");
+      transform: translateY(-2px);
+      @include shawdow-palette("secondary-color-2", 0.3);
+    }
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.RefreshButton {
+  @include font-size-palette("body-1");
+  @include font-weight(600);
+  @include bg-color-palette("white");
+  @include text-color-palette("primary-color-2");
+  @include border-color-palette("primary-color-2", 2px);
+  @include shawdow-palette("gray-400", 0.2);
+  
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover:not(:disabled) {
+    @include bg-color-palette("primary-color-2");
+    @include text-color-palette("white");
+    transform: translateY(-2px);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.GridContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.Section {
+  @include bg-color-palette("white");
+  @include shawdow-palette("gray-400", 0.1);
+  
+  padding: 24px;
+  border-radius: 12px;
+}
+
+.SectionTitle {
+  @include font-size-palette("headline-4");
+  @include text-color-palette("primary-color-1");
+  @include font-weight(600);
+  
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  @include border-color-palette("gray-300", 2px);
+  border-width: 0 0 2px 0;
+}
+
+.MeterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.LoadingContainer {
+  @include fade-in-animation(0.3s);
+  
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ErrorContainer {
+  @include fade-in-animation(0.3s);
+  @include bg-color-palette("white");
+  @include shawdow-palette("gray-400", 0.2);
+  
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.ErrorTitle {
+  @include font-size-palette("headline-2");
+  @include text-color-palette("secondary-color-1");
+  @include font-weight(700);
+  
+  margin: 0 0 16px 0;
+}
+
+.ErrorMessage {
+  @include font-size-palette("body-1");
+  @include text-color-palette("gray-700");
+  
+  margin: 0 0 32px 0;
+  max-width: 500px;
+}
+
+.RetryButton {
+  @include font-size-palette("body-1");
+  @include font-weight(600);
+  @include bg-color-palette("primary-color-2");
+  @include text-color-palette("white");
+  @include shawdow-palette("primary-color-2", 0.3);
+  
+  padding: 12px 32px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    @include bg-color-palette("primary-color-1");
+    transform: translateY(-2px);
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .Container {
+    padding: 16px;
+  }
+  
+  .Title {
+    @include font-size-palette("headline-3");
+  }
+  
+  .ControlPanel {
+    flex-direction: column;
+  }
+  
+  .MeterGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,14 +1,25 @@
 const express = require('express');
+const cors = require('cors');
 const { connect, disconnect } = require('./src/utils/modbusClient');
 
 // Import routes
 const readRoutes = require('./src/routes/read');
+const writeRoutes = require('./src/routes/write');
 const pollingRoutes = require('./src/routes/polling');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// CORS Configuration
+const corsOptions = {
+  origin: '*', // Allow all origins (for development)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
 // Middleware
+app.use(cors(corsOptions)); // Enable CORS
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -20,6 +31,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/read', readRoutes);
+app.use('/api/write', writeRoutes);
 app.use('/api/polling', pollingRoutes);
 
 // Health check endpoint
@@ -38,6 +50,12 @@ app.get('/', (req, res) => {
     endpoints: {
       read: {
         'GET /api/read/:type/:startAddress/:endAddress': 'Read registers by type (coils, holding, input) from specific range (e.g., /api/read/input/604/610)'
+      },
+      write: {
+        'POST /api/write/coil/:address': 'Write single coil - Body: { value: true/false }',
+        'POST /api/write/coils/:startAddress': 'Write multiple coils - Body: { values: [true, false, ...] }',
+        'POST /api/write/register/:address': 'Write single holding register - Body: { value: 0-65535 }',
+        'POST /api/write/registers/:startAddress': 'Write multiple holding registers - Body: { values: [100, 200, ...] }'
       },
       polling: {
         'POST /api/polling/start/:type/:startAddress/:endAddress': 'Start polling loop by type (coils, input, holding) - Optional body: {interval?: number}',

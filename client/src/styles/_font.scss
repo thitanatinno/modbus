@@ -1,0 +1,30 @@
+// Font Size Definitions
+$font-sizes: (
+  // Headlines
+  "headline-1": 46px,
+  "headline-2": 36px,
+  "headline-3": 24px,
+  "headline-4": 22px,
+  "headline-5": 18px,
+  
+  // Body
+  "body-1": 16px,
+  "body-2": 14px,
+  "body-3": 12px,
+  "body-4": 10px
+);
+
+// Font size mixin
+@mixin font-size-palette($size-name) {
+  font-size: map-get($font-sizes, $size-name);
+}
+
+// Font weight mixin
+@mixin font-weight($weight) {
+  font-weight: $weight;
+}
+
+// Font family mixin
+@mixin font-family($family: 'Roboto', $fallback: sans-serif) {
+  font-family: $family, $fallback;
+}
