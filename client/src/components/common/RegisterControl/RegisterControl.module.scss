@@ -1,0 +1,742 @@
+@import "src/styles/main";
+
+.Container {
+  @include bg-color-palette("primary-color-1");
+  @include shawdow-palette("primary-color-1", 0.3);
+  border-radius: 16px;
+  overflow: hidden;
+  margin: 20px 0;
+  border: 1px solid;
+  @include border-color-palette("primary-color-3");
+}
+
+// Header Section
+.Header {
+  @include bg-color-palette("primary-color-2");
+  border-bottom: 1px solid;
+  @include border-color-palette("primary-color-3");
+}
+
+.HeaderContent {
+  padding: 24px 32px;
+}
+
+.TitleGroup {
+  margin-bottom: 0;
+}
+
+.Title {
+  @include text-color-palette("white");
+  @include font-size-palette("headline-2");
+  @include font-weight(700);
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.Subtitle {
+  @include text-color-palette("gray-400");
+  @include font-size-palette("body-2");
+  margin: 0;
+}
+
+// Tabs
+.Tabs {
+  display: flex;
+  gap: 0;
+  @include bg-color-palette("primary-color-1");
+  padding: 0 32px;
+}
+
+.Tab {
+  @include text-color-palette("gray-400");
+  @include font-size-palette("body-1");
+  @include font-weight(500);
+  padding: 14px 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    @include text-color-palette("white");
+    @include bg-color-palette("primary-color-2");
+  }
+
+  &.Active {
+    @include text-color-palette("white");
+    border-bottom-color: #3b82f6;
+  }
+}
+
+.TabIcon {
+  font-size: 18px;
+}
+
+// Content
+.Content {
+  padding: 32px;
+}
+
+.TabContent {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Section Header
+.SectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.SectionTitle {
+  @include text-color-palette("white");
+  @include font-size-palette("headline-3");
+  @include font-weight(600);
+  margin: 0;
+}
+
+.Badge {
+  @include bg-color-palette("primary-color-3");
+  @include text-color-palette("white");
+  @include font-size-palette("body-3");
+  @include font-weight(600);
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid;
+  @include border-color-palette("primary-color-4");
+}
+
+.WarningBadge {
+  @include font-size-palette("body-3");
+  @include font-weight(500);
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+// Register Grid
+.RegisterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+  max-height: 600px;
+  overflow-y: auto;
+  padding: 4px;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    @include bg-color-palette("primary-color-2");
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    @include bg-color-palette("primary-color-3");
+    border-radius: 4px;
+    
+    &:hover {
+      @include bg-color-palette("primary-color-4");
+    }
+  }
+}
+
+.RegisterCard {
+  @include bg-color-palette("primary-color-2");
+  border: 2px solid;
+  @include border-color-palette("primary-color-3");
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+
+  &:hover {
+    @include border-color-palette("primary-color-4");
+    @include shawdow-palette("primary-color-1", 0.4);
+    transform: translateY(-2px);
+  }
+
+  &.Selected {
+    border-color: #3b82f6;
+    @include bg-color-palette("primary-color-3");
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+
+    &::before {
+      content: "✓";
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 24px;
+      height: 24px;
+      background: #3b82f6;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: bold;
+    }
+  }
+}
+
+.CardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.RegisterName {
+  @include text-color-palette("white");
+  @include font-size-palette("body-1");
+  @include font-weight(600);
+  flex: 1;
+}
+
+.RegisterBadge {
+  @include bg-color-palette("primary-color-3");
+  @include text-color-palette("gray-300");
+  @include font-size-palette("body-3");
+  @include font-weight(600);
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.CardAddress {
+  @include text-color-palette("gray-400");
+  @include font-size-palette("body-2");
+  margin-bottom: 8px;
+  font-family: 'Monaco', 'Courier New', monospace;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.AddressDec {
+  @include font-weight(600);
+}
+
+.AddressSep {
+  opacity: 0.5;
+}
+
+.AddressHex {
+  opacity: 0.8;
+}
+
+.CardDescription {
+  @include text-color-palette("gray-400");
+  @include font-size-palette("body-2");
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.CardUnit,
+.CardRange {
+  @include text-color-palette("gray-300");
+  @include font-size-palette("body-3");
+  @include font-weight(500);
+}
+
+// Action Bar
+.ActionBar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.PrimaryButton {
+  @include font-size-palette("body-1");
+  @include font-weight(600);
+  padding: 14px 28px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.SecondaryButton {
+  @include text-color-palette("gray-300");
+  @include font-size-palette("body-1");
+  @include font-weight(500);
+  padding: 14px 24px;
+  border: 1px solid;
+  @include border-color-palette("primary-color-4");
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    @include bg-color-palette("primary-color-2");
+    @include border-color-palette("primary-color-3");
+  }
+}
+
+.ButtonIcon {
+  font-size: 18px;
+}
+
+.Spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Results Section
+.Results {
+  @include bg-color-palette("primary-color-2");
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid;
+  @include border-color-palette("primary-color-3");
+}
+
+.ResultsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.ResultsTitle {
+  @include text-color-palette("white");
+  @include font-size-palette("headline-3");
+  @include font-weight(600);
+  margin: 0;
+}
+
+.ResultsTime {
+  @include text-color-palette("gray-400");
+  @include font-size-palette("body-3");
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.ResultsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.ResultCard {
+  @include bg-color-palette("primary-color-1");
+  border: 1px solid;
+  @include border-color-palette("primary-color-3");
+  border-radius: 10px;
+  padding: 16px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    @include border-color-palette("primary-color-4");
+    @include shawdow-palette("primary-color-1", 0.3);
+  }
+}
+
+.ResultCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.ResultName {
+  @include text-color-palette("white");
+  @include font-size-palette("body-2");
+  @include font-weight(600);
+  flex: 1;
+}
+
+.ResultAddress {
+  @include text-color-palette("gray-400");
+  @include font-size-palette("body-3");
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.ResultValue {
+  @include text-color-palette("white");
+  @include font-size-palette("headline-2");
+  @include font-weight(700);
+  margin-bottom: 8px;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.ResultUnit {
+  @include text-color-palette("gray-400");
+  @include font-size-palette("body-1");
+  @include font-weight(500);
+  margin-left: 4px;
+}
+
+.ResultMeta {
+  @include text-color-palette("gray-400");
+  @include font-size-palette("body-3");
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.ResultHex,
+.ResultRaw {
+  opacity: 0.8;
+}
+
+// Write Panel
+.WritePanel {
+  @include bg-color-palette("primary-color-2");
+  border: 2px solid;
+  border-color: #3b82f6;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 24px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.WritePanelHeader {
+  @include bg-color-palette("primary-color-3");
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid;
+  @include border-color-palette("primary-color-4");
+}
+
+.WritePanelTitle {
+  @include text-color-palette("white");
+  @include font-size-palette("headline-3");
+  @include font-weight(600);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.WritePanelIcon {
+  font-size: 20px;
+}
+
+.CloseButton {
+  @include text-color-palette("gray-400");
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    @include bg-color-palette("primary-color-2");
+    @include text-color-palette("white");
+  }
+}
+
+.WritePanelContent {
+  padding: 24px;
+}
+
+.InfoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.InfoCard {
+  @include bg-color-palette("primary-color-1");
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.InfoCardLabel {
+  @include text-color-palette("gray-400");
+  @include font-size-palette("body-3");
+  @include font-weight(500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.InfoCardValue {
+  @include text-color-palette("white");
+  @include font-size-palette("body-1");
+  @include font-weight(600);
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.InfoDescription {
+  @include bg-color-palette("primary-color-1");
+  @include text-color-palette("gray-300");
+  @include font-size-palette("body-2");
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+
+  strong {
+    @include text-color-palette("white");
+  }
+}
+
+// Input Group
+.InputGroup {
+  margin-bottom: 24px;
+}
+
+.InputLabel {
+  @include text-color-palette("white");
+  @include font-size-palette("body-1");
+  @include font-weight(600);
+  display: block;
+  margin-bottom: 10px;
+}
+
+.InputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.Input {
+  @include bg-color-palette("primary-color-1");
+  @include text-color-palette("white");
+  @include font-size-palette("body-1");
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid;
+  @include border-color-palette("primary-color-4");
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  font-family: 'Monaco', 'Courier New', monospace;
+  @include font-weight(500);
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  &::placeholder {
+    @include text-color-palette("gray-500");
+  }
+}
+
+.InputUnit {
+  @include text-color-palette("gray-400");
+  @include font-size-palette("body-2");
+  @include font-weight(500);
+  position: absolute;
+  right: 16px;
+  pointer-events: none;
+}
+
+.WriteButton {
+  @include font-size-palette("body-1");
+  @include font-weight(600);
+  padding: 14px 28px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  width: 100%;
+  justify-content: center;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Notifications
+.Notification {
+  @include font-size-palette("body-1");
+  padding: 16px 20px;
+  border-radius: 10px;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  @include font-weight(500);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.NotificationSuccess {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.NotificationError {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.NotificationIcon {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.NotificationMessage {
+  flex: 1;
+}
+
+// Error Notification
+.ErrorNotification {
+  @include font-size-palette("body-1");
+  padding: 16px 20px;
+  border-radius: 10px;
+  margin: 20px 32px 0;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  @include font-weight(500);
+}
+
+.ErrorIcon {
+  font-size: 20px;
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .HeaderContent {
+    padding: 20px;
+  }
+
+  .Tabs {
+    padding: 0 20px;
+  }
+
+  .Content {
+    padding: 20px;
+  }
+
+  .RegisterGrid {
+    grid-template-columns: 1fr;
+    max-height: 500px;
+  }
+
+  .ResultsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .ActionBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .InfoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .Tab {
+    @include font-size-palette("body-2");
+    padding: 12px 16px;
+  }
+}

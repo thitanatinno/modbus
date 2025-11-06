@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const useDashboard = () => {
   const [stateDashboard, setState] = useState({
@@ -16,7 +16,7 @@ const useDashboard = () => {
     loading: true,
     error: null,
     isPolling: false,
-    lastUpdate: "Never",
+    lastUpdate: "Not yet updated",
   });
 
   const setDashboard = (field, value) => {

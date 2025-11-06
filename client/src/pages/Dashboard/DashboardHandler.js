@@ -1,35 +1,42 @@
-import { 
-  readInputRegisters, 
-  startPolling, 
-  stopPolling, 
-  getPollingStatus 
-} from "../../api/powerMeterService";
+import { readInputRegisters } from "../../api/powerMeterService";
+import config from "../../config";
+
+/**
+ * Dashboard Handler - Client-side polling implementation
+ * Uses direct read API calls with client-controlled intervals
+ */
 
 const DashboardHandler = (stateDashboard, setDashboard) => {
+  // Store interval ID for cleanup
+  let pollingIntervalId = null;
+
   // Parse register data and update state
-  const parseRegisterData = (data) => {
-    if (!data || !data.data || !Array.isArray(data.data)) {
-      console.error("Invalid data format:", data);
+  const parseRegisterData = (responseData) => {
+    // Extract the data array from the nested response object
+    // Response format: { success, type, attempts, data: { success, timestamp, startAddress, count, data: [...] } }
+    const dataObj = responseData?.data;
+    const registers = dataObj?.data;
+    
+    if (!registers || !Array.isArray(registers)) {
+      console.error("Invalid data format - expected nested data array:", responseData);
       return;
     }
-
-    const registers = data.data;
     
-    // Register mapping:
-    // 604: PV1 Voltage
-    // 605: PV1 Current
-    // 606: PV1 Power
-    // 610: PV2 Voltage
-    // 611: PV2 Current
-    // 612: PV2 Power
+    // Register mapping (604-615 range):
+    // Index 0 (604): PV1 Voltage
+    // Index 1 (605): PV1 Current
+    // Index 2 (606): PV1 Power
+    // Index 6 (610): PV2 Voltage
+    // Index 7 (611): PV2 Current
+    // Index 8 (612): PV2 Power
     
-    const pv1Voltage = (registers[0] || 0) / 10; // Assuming 0.1 scale
-    const pv1Current = (registers[1] || 0) / 10;
-    const pv1Power = registers[2] || 0;
+    const pv1Voltage = (registers[0] || 0) / 10; // Scale: 0.1V
+    const pv1Current = (registers[1] || 0) / 100; // Scale: 0.01A
+    const pv1Power = registers[2] || 0; // Scale: 1W
     
-    const pv2Voltage = (registers[6] || 0) / 10;
-    const pv2Current = (registers[7] || 0) / 10;
-    const pv2Power = registers[8] || 0;
+    const pv2Voltage = (registers[6] || 0) / 10; // Scale: 0.1V
+    const pv2Current = (registers[7] || 0) / 100; // Scale: 0.01A
+    const pv2Power = registers[8] || 0; // Scale: 1W
     
     const totalPower = pv1Power + pv2Power;
 
@@ -51,67 +58,82 @@ const DashboardHandler = (stateDashboard, setDashboard) => {
     });
   };
 
-  // Fetch data from API
-  const fetchData = async () => {
+  // Fetch data from API using read endpoint
+  const fetchData = async (showLoading = true) => {
     try {
-      setDashboard("loading", true);
+      if (showLoading) {
+        setDashboard("loading", true);
+      }
       
-      // Read registers 604-612 (includes PV1 and PV2 data)
-      const response = await readInputRegisters(604, 612);
+      // Read input registers 604-615 (includes PV1 and PV2 data)
+      const response = await readInputRegisters(604, 615);
       
       if (response.data && response.data.success) {
-        parseRegisterData(response.data.data);
+        // Pass the entire response.data object which has nested data structure
+        // response.data = { success, type, attempts, data: { success, timestamp, data: [...] } }
+        parseRegisterData(response.data);
       } else {
-        throw new Error("Failed to read registers");
+        throw new Error(response.data?.message || "Failed to read registers");
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      setDashboard({
-        error: error.message || "Failed to connect to power meter",
-        loading: false,
-      });
+      
+      // Don't show error if we're polling (just log it)
+      if (!stateDashboard.isPolling || showLoading) {
+        setDashboard({
+          error: error.response?.data?.message || error.message || "Failed to connect to power meter",
+          loading: false,
+        });
+      } else {
+        // If polling, just update loading state
+        setDashboard("loading", false);
+      }
     }
   };
 
-  // Start polling
+  // Start client-side polling
   const handleStartPolling = async () => {
     try {
-      setDashboard("loading", true);
-      
-      // Start polling input registers 604-612 every 5 seconds
-      await startPolling("input", 604, 612, 5000);
-      
+      // Mark as polling
       setDashboard({
         isPolling: true,
-        loading: false,
+        loading: true,
+        error: null,
       });
       
-      // Initial fetch
-      await fetchData();
+      // Initial data fetch
+      await fetchData(true);
       
-      // Set up interval to fetch latest data
-      const intervalId = setInterval(async () => {
-        await fetchData();
-      }, 5000);
+      // Set up client-side polling interval
+      pollingIntervalId = setInterval(async () => {
+        await fetchData(false); // Don't show loading on subsequent polls
+      }, config.pollingInterval);
       
-      // Store interval ID for cleanup
-      window.dashboardPollingInterval = intervalId;
+      // Store interval ID globally for cleanup
+      window.dashboardPollingInterval = pollingIntervalId;
+      
+      console.log(`Client-side polling started (interval: ${config.pollingInterval}ms)`);
       
     } catch (error) {
       console.error("Error starting polling:", error);
       setDashboard({
         error: "Failed to start monitoring",
         loading: false,
+        isPolling: false,
       });
     }
   };
 
-  // Stop polling
-  const handleStopPolling = async () => {
+  // Stop client-side polling
+  const handleStopPolling = () => {
     try {
-      await stopPolling();
+      // Clear the interval
+      if (pollingIntervalId) {
+        clearInterval(pollingIntervalId);
+        pollingIntervalId = null;
+      }
       
-      // Clear interval
+      // Clear global interval if exists
       if (window.dashboardPollingInterval) {
         clearInterval(window.dashboardPollingInterval);
         window.dashboardPollingInterval = null;
@@ -120,59 +142,57 @@ const DashboardHandler = (stateDashboard, setDashboard) => {
       setDashboard({
         isPolling: false,
       });
+      
+      console.log("Client-side polling stopped");
     } catch (error) {
       console.error("Error stopping polling:", error);
     }
   };
 
-  // Refresh data manually
+  // Refresh data manually (single read)
   const handleRefresh = async () => {
-    await fetchData();
+    if (!stateDashboard.isPolling) {
+      await fetchData(true);
+    }
   };
 
-  // Retry connection
+  // Retry connection after error
   const handleRetry = async () => {
     setDashboard({
       error: null,
       loading: true,
     });
     
-    await fetchData();
+    await fetchData(true);
   };
 
-  // Check polling status on mount
-  const checkStatus = async () => {
+  // Initialize - fetch data once on mount
+  const initialize = async () => {
     try {
-      const response = await getPollingStatus();
+      setDashboard({
+        loading: true,
+        error: null,
+      });
       
-      if (response.data && response.data.success) {
-        const status = response.data.status;
-        
-        if (status.isPolling) {
-          setDashboard({
-            isPolling: true,
-          });
-          
-          // Start fetching data
-          await fetchData();
-          
-          // Set up interval
-          const intervalId = setInterval(async () => {
-            await fetchData();
-          }, 5000);
-          
-          window.dashboardPollingInterval = intervalId;
-        } else {
-          setDashboard({
-            loading: false,
-          });
-        }
-      }
+      await fetchData(true);
     } catch (error) {
-      console.error("Error checking status:", error);
+      console.error("Error initializing dashboard:", error);
       setDashboard({
         loading: false,
       });
+    }
+  };
+
+  // Cleanup function to stop polling
+  const cleanup = () => {
+    if (pollingIntervalId) {
+      clearInterval(pollingIntervalId);
+      pollingIntervalId = null;
+    }
+    
+    if (window.dashboardPollingInterval) {
+      clearInterval(window.dashboardPollingInterval);
+      window.dashboardPollingInterval = null;
     }
   };
 
@@ -182,7 +202,8 @@ const DashboardHandler = (stateDashboard, setDashboard) => {
     handleRefresh,
     handleRetry,
     fetchData,
-    checkStatus,
+    initialize,
+    cleanup,
   };
 };
 

@@ -1,12 +1,22 @@
-import React from "react";
+import React, { useEffect } from "react";
 import styles from "./Dashboard.module.scss";
 import useDashboard from "./useDashboard";
 import DashboardHandler from "./DashboardHandler";
-import { MeterCard, LoadingSpinner } from "../../components/common";
+import { MeterCard, LoadingSpinner, RegisterControl } from "../../components/common";
 
 export default function Dashboard() {
   const { stateDashboard, setDashboard } = useDashboard();
   const handlers = DashboardHandler(stateDashboard, setDashboard);
+
+  // Initialize on mount and cleanup on unmount
+  useEffect(() => {
+    handlers.initialize();
+    
+    // Cleanup polling on unmount
+    return () => {
+      handlers.cleanup();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (stateDashboard.loading) {
     return (
@@ -131,6 +141,9 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Register Control Section */}
+      <RegisterControl />
     </div>
   );
 }

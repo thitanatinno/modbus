@@ -2,11 +2,8 @@ import axiosInstance from "./axiosInstance";
 
 /**
  * Power Meter Service - API calls for Modbus power meter data
+ * Uses client-side polling with direct read endpoints
  */
-
-// Get latest data from polling
-export const getLatestData = () => 
-  axiosInstance.get("/api/polling/status");
 
 // Read holding registers from specific address range
 export const readHoldingRegisters = (startAddress, endAddress) => 
@@ -16,25 +13,21 @@ export const readHoldingRegisters = (startAddress, endAddress) =>
 export const readInputRegisters = (startAddress, endAddress) => 
   axiosInstance.get(`/api/read/input/${startAddress}/${endAddress}`);
 
-// Start polling for specific register range
-export const startPolling = (type, startAddress, endAddress, interval = 5000) => 
-  axiosInstance.post(`/api/polling/start/${type}/${startAddress}/${endAddress}`, { 
-    interval 
-  });
+// Read coils from specific address range
+export const readCoils = (startAddress, endAddress) => 
+  axiosInstance.get(`/api/read/coils/${startAddress}/${endAddress}`);
 
-// Stop polling
-export const stopPolling = () => 
-  axiosInstance.post("/api/polling/stop");
+// Read discrete inputs from specific address range
+export const readDiscreteInputs = (startAddress, endAddress) => 
+  axiosInstance.get(`/api/read/discrete/${startAddress}/${endAddress}`);
 
-// Get polling status
-export const getPollingStatus = () => 
-  axiosInstance.get("/api/polling/status");
+// Write single coil
+export const writeSingleCoil = (address, value) => 
+  axiosInstance.post(`/api/write/coil/${address}`, { value });
 
-// Get logs
-export const getLogs = (limit = 50) => 
-  axiosInstance.get("/api/polling/logs", { 
-    params: { limit } 
-  });
+// Write single register
+export const writeSingleRegister = (address, value) => 
+  axiosInstance.post(`/api/write/register/${address}`, { value });
 
 // Health check
 export const healthCheck = () => 

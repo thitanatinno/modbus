@@ -4,7 +4,7 @@
 
 module.exports = {
   apiBaseUrl: process.env.REACT_APP_API_BASE_URL || "http://localhost:3000",
-  pollingInterval: 5000, // 5 seconds
+  pollingInterval: 60000, // 60 seconds
   retryAttempts: 3,
   retryDelay: 1000, // 1 second
 };
