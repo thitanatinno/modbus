@@ -1,4 +1,5 @@
 import { readInputRegisters } from "../../api/powerMeterService";
+import { scaleRegisterValue } from "../../utils/registerMapping";
 import config from "../../config";
 
 /**
@@ -30,13 +31,14 @@ const DashboardHandler = (stateDashboard, setDashboard) => {
     // Index 7 (611): PV2 Current
     // Index 8 (612): PV2 Power
     
-    const pv1Voltage = (registers[0] || 0) / 10; // Scale: 0.1V
-    const pv1Current = (registers[1] || 0) / 100; // Scale: 0.01A
-    const pv1Power = registers[2] || 0; // Scale: 1W
+    // Use centralized scaling from registerMapping
+    const pv1Voltage = scaleRegisterValue(604, registers[0] || 0);
+    const pv1Current = scaleRegisterValue(605, registers[1] || 0);
+    const pv1Power = scaleRegisterValue(606, registers[2] || 0);
     
-    const pv2Voltage = (registers[6] || 0) / 10; // Scale: 0.1V
-    const pv2Current = (registers[7] || 0) / 100; // Scale: 0.01A
-    const pv2Power = registers[8] || 0; // Scale: 1W
+    const pv2Voltage = scaleRegisterValue(610, registers[6] || 0);
+    const pv2Current = scaleRegisterValue(611, registers[7] || 0);
+    const pv2Power = scaleRegisterValue(612, registers[8] || 0);
     
     const totalPower = pv1Power + pv2Power;
 

@@ -3,6 +3,7 @@ import {
   readHoldingRegisters,
   writeSingleRegister 
 } from "../../../api/powerMeterService";
+import { scaleRegisterValue, unscaleRegisterValue } from "../../../utils/registerMapping";
 
 const RegisterControlHandler = (state, setState) => {
   // Toggle read register selection (card click)
@@ -73,29 +74,9 @@ const RegisterControlHandler = (state, setState) => {
             const dataObj = response.data.data;
             const rawValue = dataObj?.data?.[0];
 
-            // Apply scaling based on register
-            let displayValue = rawValue;
-            if (registerInfo.address >= 604 && registerInfo.address <= 606) {
-              // PV1 registers
-              if (registerInfo.name.includes("Voltage")) displayValue = (rawValue / 10).toFixed(2);
-              else if (registerInfo.name.includes("Current")) displayValue = (rawValue / 100).toFixed(2);
-            } else if (registerInfo.address >= 610 && registerInfo.address <= 612) {
-              // PV2 registers
-              if (registerInfo.name.includes("Voltage")) displayValue = (rawValue / 10).toFixed(2);
-              else if (registerInfo.name.includes("Current")) displayValue = (rawValue / 100).toFixed(2);
-            } else if (registerInfo.address >= 300 && registerInfo.address <= 302) {
-              // Grid voltage
-              displayValue = (rawValue / 10).toFixed(2);
-            } else if (registerInfo.address >= 311 && registerInfo.address <= 313) {
-              // Grid current
-              displayValue = (rawValue / 100).toFixed(2);
-            } else if (registerInfo.address === 1052) {
-              // Battery voltage
-              displayValue = (rawValue / 10).toFixed(2);
-            } else if (registerInfo.address === 1053) {
-              // Battery current
-              displayValue = (rawValue / 100).toFixed(2);
-            }
+            // Use centralized scaling from registerMapping
+            const scaledValue = scaleRegisterValue(registerInfo.address, rawValue);
+            const displayValue = typeof scaledValue === 'number' ? scaledValue.toFixed(2) : scaledValue;
 
             results.push({
               ...registerInfo,
@@ -138,20 +119,23 @@ const RegisterControlHandler = (state, setState) => {
       });
 
       const address = parseInt(state.selectedWriteRegister);
-      const value = parseInt(state.writeValue);
+      const userValue = parseInt(state.writeValue);
 
-      if (isNaN(address) || isNaN(value)) {
+      if (isNaN(address) || isNaN(userValue)) {
         throw new Error("Invalid address or value");
       }
 
+      // Apply reverse scaling if needed (most holding registers don't need it, but keep for consistency)
+      const rawValue = unscaleRegisterValue(address, userValue);
+
       // Write single register
-      const response = await writeSingleRegister(address, value);
+      const response = await writeSingleRegister(address, rawValue);
 
       if (response.data && response.data.success) {
         setState({
           writeResult: {
             success: true,
-            message: `Successfully wrote value ${value} to register ${address} (${state.selectedRegisterInfo?.name})`,
+            message: `Successfully wrote value ${userValue} to register ${address} (${state.selectedRegisterInfo?.name})`,
           },
           writing: false,
           writeValue: "", // Clear value after successful write
