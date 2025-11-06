@@ -15,7 +15,7 @@ services:
     
     # Load environment variables from .env file
     env_file:
-      - ./server/.env
+      - .env
     
     # Environment variables (can override .env)
     environment:
