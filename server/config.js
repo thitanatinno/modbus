@@ -27,12 +27,12 @@ module.exports = {
 
   // MQTT configuration
   mqtt: {
-    host: process.env.MQTT_HOST || 'localhost',
+    host: process.env.MQTT_HOST || '139.59.245.155',
     port: parseInt(process.env.MQTT_PORT) || 1883,
-    username: process.env.MQTT_USERNAME || null,
-    password: process.env.MQTT_PASSWORD || null,
+    username: process.env.MQTT_USERNAME || 'root',
+    password: process.env.MQTT_PASSWORD || 'DI#1nnov@tion',
     clientId: process.env.MQTT_CLIENT_ID || null, // Will auto-generate if null
-    baseTopic: process.env.MQTT_BASE_TOPIC || 'modbus/meter',
+    baseTopic: process.env.MQTT_BASE_TOPIC || 'hyxi_meter',
     qos: parseInt(process.env.MQTT_QOS) || 0,
     retain: process.env.MQTT_RETAIN === 'true' || false,
     connectTimeout: parseInt(process.env.MQTT_CONNECT_TIMEOUT) || 30000,
