@@ -69,6 +69,50 @@ npm start
 npm run dev
 ```
 
+## 🚀 Auto-Start Feature (NEW)
+
+The server now automatically starts reading input registers and publishing to MQTT when it boots up! No manual API calls needed.
+
+### Default Auto-Start Configuration:
+- **Registers**: 300,301,302,311,312,313,316,317,406,604,605,606,610,611,612
+- **Interval**: 5000ms (5 seconds)
+- **Device ID**: device-1
+- **Type**: Input registers
+
+### Customizing Auto-Start:
+
+1. **Copy environment template:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Edit `.env` file:**
+   ```bash
+   # Enable/disable auto-start
+   AUTO_START_ENABLED=true
+   
+   # Customize registers (comma-separated)
+   AUTO_START_REGISTERS=300,301,302,311,312,313,316,317,406,604,605,606,610,611,612
+   
+   # Change polling interval (milliseconds)
+   AUTO_START_INTERVAL=5000
+   
+   # Set device identifier
+   AUTO_START_DEVICE_ID=device-1
+   
+   # Choose data type: input, coils, holding, both
+   AUTO_START_TYPE=input
+   ```
+
+3. **Restart the server** to apply changes
+
+### What Happens Automatically:
+✅ **Modbus Connection** - Connects to RS485 device  
+✅ **MQTT Connection** - Connects to MQTT broker  
+✅ **Auto Polling** - Starts reading specified registers  
+✅ **MQTT Publishing** - Publishes data to topics like `hyxi_meter/device-1/input-registers`  
+✅ **Error Recovery** - Auto-reconnects if connections drop
+
 ## Reading Different Register Types
 
 The program supports three types of Modbus reads:

@@ -168,6 +168,76 @@ function getLatestMqttData() {
   return latestMqttData;
 }
 
+/**
+ * Auto-start MQTT polling for specific input registers
+ * @param {Array} registers - Array of register addresses to read
+ * @param {number} interval - Polling interval in milliseconds
+ * @param {string} deviceId - Device identifier
+ * @returns {Promise<object>} Operation result
+ */
+async function autoStartInputRegisterPolling(registers = [300,301,302,311,312,313,316,317,406,604,605,606,610,611,612], interval = 5000, deviceId = 'device-1') {
+  try {
+    if (isMqttPolling) {
+      addMqttLog('WARNING', 'MQTT polling is already running - skipping auto-start');
+      return {
+        success: false,
+        message: 'MQTT polling is already running'
+      };
+    }
+
+    // Check MQTT connection first
+    const mqttStatus = mqttClient.getStatus();
+    if (!mqttStatus.connected) {
+      // Try to connect to MQTT
+      const connected = await mqttClient.connect();
+      if (!connected) {
+        addMqttLog('ERROR', 'Failed to connect to MQTT broker for auto-start');
+        return {
+          success: false,
+          message: 'Failed to connect to MQTT broker'
+        };
+      }
+    }
+
+    // Sort registers to find the optimal range
+    const sortedRegisters = [...registers].sort((a, b) => a - b);
+    const minRegister = sortedRegisters[0];
+    const maxRegister = sortedRegisters[sortedRegisters.length - 1];
+    
+    addMqttLog('INFO', `Auto-starting MQTT polling for input registers: ${registers.join(', ')}`);
+    addMqttLog('INFO', `Reading register range ${minRegister}-${maxRegister} (optimized for batch reading)`);
+    
+    // Start polling with the full range (more efficient than individual reads)
+    const result = startMqttPollingLoop(minRegister, maxRegister, interval, 'input', deviceId);
+    
+    if (result.success) {
+      addMqttLog('SUCCESS', `Auto-started MQTT polling successfully`);
+      return {
+        success: true,
+        message: 'Auto-started MQTT polling for input registers',
+        config: {
+          registers: registers,
+          startAddress: minRegister,
+          endAddress: maxRegister,
+          type: 'input',
+          deviceId,
+          interval
+        }
+      };
+    } else {
+      addMqttLog('ERROR', `Failed to auto-start MQTT polling: ${result.message}`);
+      return result;
+    }
+  } catch (error) {
+    addMqttLog('ERROR', `Error in auto-start MQTT polling: ${error.message}`);
+    return {
+      success: false,
+      message: 'Error in auto-start MQTT polling',
+      error: error.message
+    };
+  }
+}
+
 function getMqttLogsData(limit = null) {
   if (limit && limit > 0) {
     return mqttLogs.slice(-limit);
@@ -395,5 +465,6 @@ module.exports = {
   clearMqttLogs,
   publishSingle,
   getMqttConnection,
-  getLatestMqttData
+  getLatestMqttData,
+  autoStartInputRegisterPolling
 };

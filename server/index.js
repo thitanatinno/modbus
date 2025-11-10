@@ -1,7 +1,9 @@
 const express = require('express');
 const cors = require('cors');
+const config = require('./config');
 const { connect, disconnect } = require('./src/utils/modbusClient');
 const mqttClient = require('./src/utils/mqttClient');
+const { autoStartInputRegisterPolling } = require('./src/controllers/mqttPollingController');
 
 // Import routes
 const readRoutes = require('./src/routes/read');
@@ -124,12 +126,53 @@ async function startServer() {
       console.log('Server will start anyway, but Modbus operations will fail until connection is established.');
     }
     
+    // Connect to MQTT broker
+    const mqttConnected = await mqttClient.connect();
+    
+    if (!mqttConnected) {
+      console.error('Failed to connect to MQTT broker. Please check your MQTT configuration.');
+      console.log('Server will start anyway, but MQTT operations will fail until connection is established.');
+    }
+    
+    // Auto-start MQTT polling if enabled and connections are ready
+    if (config.autoStart.enabled && connected && mqttConnected) {
+      console.log('Auto-starting MQTT polling for input registers...');
+      const autoStartResult = await autoStartInputRegisterPolling(
+        config.autoStart.registers,
+        config.autoStart.interval,
+        config.autoStart.deviceId
+      );
+      
+      if (autoStartResult.success) {
+        console.log('✅ MQTT polling started automatically');
+        console.log(`📊 Reading registers: ${autoStartResult.config.registers.join(', ')}`);
+        console.log(`📡 Publishing to MQTT every ${autoStartResult.config.interval}ms`);
+        console.log(`🏷️ Device ID: ${autoStartResult.config.deviceId}`);
+      } else {
+        console.log('❌ Failed to auto-start MQTT polling:', autoStartResult.message);
+      }
+    } else if (!config.autoStart.enabled) {
+      console.log('⚠️ Auto-start is disabled in configuration');
+    } else {
+      console.log('⚠️ Skipping auto-start due to connection issues');
+    }
+    
     // Start Express server
     app.listen(PORT, () => {
       console.log(`\n========================================`);
+      console.log(`Modbus RS485 to MQTT API Server`);
+      console.log(`========================================`);
       console.log(`Server running on http://localhost:${PORT}`);
       console.log(`API Documentation: http://localhost:${PORT}/`);
       console.log(`Health Check: http://localhost:${PORT}/health`);
+      console.log(`Modbus: ${connected ? '🟢 Connected' : '🔴 Disconnected'}`);
+      console.log(`MQTT: ${mqttConnected ? '🟢 Connected' : '🔴 Disconnected'}`);
+      console.log(`Auto-polling: ${config.autoStart.enabled && connected && mqttConnected ? '🟢 Active' : '🔴 Inactive'}`);
+      if (config.autoStart.enabled) {
+        console.log(`📊 Registers: ${config.autoStart.registers.join(', ')}`);
+        console.log(`⏱️ Interval: ${config.autoStart.interval}ms`);
+        console.log(`🏷️ Device: ${config.autoStart.deviceId}`);
+      }
       console.log(`========================================\n`);
     });
   } catch (error) {

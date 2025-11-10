@@ -38,5 +38,16 @@ module.exports = {
     connectTimeout: parseInt(process.env.MQTT_CONNECT_TIMEOUT) || 30000,
     reconnectPeriod: parseInt(process.env.MQTT_RECONNECT_PERIOD) || 1000,
     keepalive: parseInt(process.env.MQTT_KEEPALIVE) || 60
+  },
+
+  // Auto-start configuration
+  autoStart: {
+    enabled: process.env.AUTO_START_ENABLED !== 'false', // Default enabled, set to 'false' to disable
+    registers: process.env.AUTO_START_REGISTERS 
+      ? process.env.AUTO_START_REGISTERS.split(',').map(r => parseInt(r.trim()))
+      : [300,301,302,311,312,313,316,317,406,604,605,606,610,611,612],
+    interval: parseInt(process.env.AUTO_START_INTERVAL) || 5000,
+    deviceId: process.env.AUTO_START_DEVICE_ID || 'device-1',
+    type: process.env.AUTO_START_TYPE || 'input' // coils, input, holding, both
   }
 };
