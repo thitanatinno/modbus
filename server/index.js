@@ -71,6 +71,8 @@ app.get('/', (req, res) => {
       },
       'mqtt-polling': {
         'POST /api/mqtt-polling/start/:type/:startAddress/:endAddress': 'Start MQTT polling loop by type (coils, input, holding, both) - Optional body: {interval?: number, deviceId?: string}',
+        'POST /api/mqtt-polling/start-individual': 'Start individual register MQTT polling (fault tolerant) - Body: {registers: [300,301,302], interval?: 5000, deviceId?: "device-1"}',
+        'POST /api/mqtt-polling/read-individual': 'Read individual registers once (testing) - Body: {registers: [300,301,302]}',
         'POST /api/mqtt-polling/stop': 'Stop MQTT polling loop',
         'GET /api/mqtt-polling/status': 'Get MQTT polling and connection status',
         'GET /api/mqtt-polling/logs': 'Get MQTT polling logs (optional query: ?limit=50)',
@@ -148,6 +150,7 @@ async function startServer() {
         console.log(`📊 Reading registers: ${autoStartResult.config.registers.join(', ')}`);
         console.log(`📡 Publishing to MQTT every ${autoStartResult.config.interval}ms`);
         console.log(`🏷️ Device ID: ${autoStartResult.config.deviceId}`);
+        console.log(`🔧 Mode: ${config.autoStart.individualReads ? 'Individual reads (fault tolerant)' : 'Batch reads (faster)'}`);
       } else {
         console.log('❌ Failed to auto-start MQTT polling:', autoStartResult.message);
       }
@@ -172,6 +175,7 @@ async function startServer() {
         console.log(`📊 Registers: ${config.autoStart.registers.join(', ')}`);
         console.log(`⏱️ Interval: ${config.autoStart.interval}ms`);
         console.log(`🏷️ Device: ${config.autoStart.deviceId}`);
+        console.log(`🔧 Read Mode: ${config.autoStart.individualReads ? 'Individual (fault tolerant)' : 'Batch (faster)'}`);
       }
       console.log(`========================================\n`);
     });

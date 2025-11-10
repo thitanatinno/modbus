@@ -169,7 +169,58 @@ function getLatestMqttData() {
 }
 
 /**
- * Auto-start MQTT polling for specific input registers
+ * Read individual input registers with error handling
+ * @param {Array} registers - Array of register addresses to read
+ * @returns {Promise<object>} Read results with individual register status
+ */
+async function readIndividualInputRegisters(registers) {
+  const results = {
+    success: true,
+    timestamp: new Date().toISOString(),
+    registers: {},
+    successCount: 0,
+    failureCount: 0,
+    errors: []
+  };
+
+  for (const registerAddr of registers) {
+    try {
+      const data = await readInputRegisters(registerAddr, 1);
+      if (data.success && data.data && data.data.length > 0) {
+        results.registers[registerAddr] = {
+          success: true,
+          value: data.data[0],
+          timestamp: data.timestamp
+        };
+        results.successCount++;
+      } else {
+        results.registers[registerAddr] = {
+          success: false,
+          error: data.error || 'No data returned',
+          timestamp: data.timestamp
+        };
+        results.failureCount++;
+        results.errors.push(`Register ${registerAddr}: ${data.error || 'No data returned'}`);
+      }
+    } catch (error) {
+      results.registers[registerAddr] = {
+        success: false,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+      results.failureCount++;
+      results.errors.push(`Register ${registerAddr}: ${error.message}`);
+    }
+  }
+
+  // Overall success if at least one register was read successfully
+  results.success = results.successCount > 0;
+  
+  return results;
+}
+
+/**
+ * Auto-start MQTT polling for specific input registers with individual error handling
  * @param {Array} registers - Array of register addresses to read
  * @param {number} interval - Polling interval in milliseconds
  * @param {string} deviceId - Device identifier
@@ -199,43 +250,111 @@ async function autoStartInputRegisterPolling(registers = [300,301,302,311,312,31
       }
     }
 
-    // Sort registers to find the optimal range
-    const sortedRegisters = [...registers].sort((a, b) => a - b);
-    const minRegister = sortedRegisters[0];
-    const maxRegister = sortedRegisters[sortedRegisters.length - 1];
+    addMqttLog('INFO', `Auto-starting MQTT polling for individual input registers: ${registers.join(', ')}`);
+    addMqttLog('INFO', `Using individual register reads to handle partial failures gracefully`);
     
-    addMqttLog('INFO', `Auto-starting MQTT polling for input registers: ${registers.join(', ')}`);
-    addMqttLog('INFO', `Reading register range ${minRegister}-${maxRegister} (optimized for batch reading)`);
-    
-    // Start polling with the full range (more efficient than individual reads)
-    const result = startMqttPollingLoop(minRegister, maxRegister, interval, 'input', deviceId);
+    // Start individual register polling
+    const result = startIndividualRegisterPolling(registers, interval, deviceId);
     
     if (result.success) {
-      addMqttLog('SUCCESS', `Auto-started MQTT polling successfully`);
+      addMqttLog('SUCCESS', `Auto-started individual register MQTT polling successfully`);
       return {
         success: true,
-        message: 'Auto-started MQTT polling for input registers',
+        message: 'Auto-started MQTT polling for individual input registers',
         config: {
           registers: registers,
-          startAddress: minRegister,
-          endAddress: maxRegister,
-          type: 'input',
+          type: 'input-individual',
           deviceId,
-          interval
+          interval,
+          totalRegisters: registers.length
         }
       };
     } else {
-      addMqttLog('ERROR', `Failed to auto-start MQTT polling: ${result.message}`);
+      addMqttLog('ERROR', `Failed to auto-start individual register MQTT polling: ${result.message}`);
       return result;
     }
   } catch (error) {
-    addMqttLog('ERROR', `Error in auto-start MQTT polling: ${error.message}`);
+    addMqttLog('ERROR', `Error in auto-start individual register MQTT polling: ${error.message}`);
     return {
       success: false,
-      message: 'Error in auto-start MQTT polling',
+      message: 'Error in auto-start individual register MQTT polling',
       error: error.message
     };
   }
+}
+
+/**
+ * Start individual register polling loop
+ * @param {Array} registers - Array of register addresses
+ * @param {number} interval - Polling interval in milliseconds  
+ * @param {string} deviceId - Device identifier
+ * @returns {object} Operation result
+ */
+function startIndividualRegisterPolling(registers, interval = 5000, deviceId = 'device-1') {
+  if (isMqttPolling) {
+    return {
+      success: false,
+      message: 'MQTT polling is already running'
+    };
+  }
+
+  addMqttLog('INFO', `Starting individual register polling: ${registers.length} registers, device: ${deviceId}, interval: ${interval}ms`);
+  
+  const individualPoll = async () => {
+    try {
+      const results = await readIndividualInputRegisters(registers);
+      
+      if (results.successCount > 0) {
+        // Create data structure for MQTT publishing
+        const mqttData = {
+          inputRegisters: {
+            success: true,
+            data: results.registers,
+            successCount: results.successCount,
+            failureCount: results.failureCount,
+            totalRegisters: registers.length,
+            timestamp: results.timestamp,
+            startAddress: Math.min(...registers),
+            count: registers.length
+          }
+        };
+
+        // Publish to MQTT
+        const publishResult = await mqttClient.publishModbusData(mqttData, deviceId);
+        if (publishResult.success) {
+          addMqttLog('SUCCESS', `Published individual register data to MQTT for device ${deviceId} (${results.successCount}/${registers.length} registers successful)`, {
+            successCount: results.successCount,
+            failureCount: results.failureCount,
+            errors: results.errors
+          });
+        } else {
+          addMqttLog('ERROR', `Failed to publish individual register data to MQTT for device ${deviceId}`, publishResult.error);
+        }
+      } else {
+        addMqttLog('ERROR', `All individual register reads failed for device ${deviceId}`, results.errors);
+      }
+      
+    } catch (error) {
+      addMqttLog('ERROR', `Individual register polling error: ${error.message}`);
+    }
+  };
+  
+  // Run initial poll
+  individualPoll();
+  
+  mqttPollingInterval = setInterval(individualPoll, interval);
+  isMqttPolling = true;
+  
+  return {
+    success: true,
+    message: 'Individual register MQTT polling started successfully',
+    config: {
+      registers,
+      deviceId,
+      interval,
+      totalRegisters: registers.length
+    }
+  };
 }
 
 function getMqttLogsData(limit = null) {
@@ -457,6 +576,108 @@ async function getMqttConnection(req, res) {
   }
 }
 
+/**
+ * Start individual register MQTT polling
+ */
+async function startIndividualMqttPolling(req, res) {
+  try {
+    const { registers } = req.body;
+    const interval = req.body.interval ? parseInt(req.body.interval) : null;
+    const deviceId = req.body.deviceId || 'device-1';
+    
+    if (!registers || !Array.isArray(registers) || registers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registers array is required in request body. Example: {"registers": [300, 301, 302]}'
+      });
+    }
+    
+    // Validate register numbers
+    for (const reg of registers) {
+      if (!Number.isInteger(reg) || reg < 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid register address: ${reg}. Must be non-negative integers.`
+        });
+      }
+    }
+    
+    if (interval && (isNaN(interval) || interval < 100)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Interval must be a number >= 100ms.'
+      });
+    }
+    
+    // Check MQTT connection
+    const mqttStatus = mqttClient.getStatus();
+    if (!mqttStatus.connected) {
+      // Try to connect to MQTT
+      const connected = await mqttClient.connect();
+      if (!connected) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to connect to MQTT broker. Please check MQTT configuration.'
+        });
+      }
+    }
+    
+    const result = startIndividualRegisterPolling(registers, interval || 5000, deviceId);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error starting individual register MQTT polling',
+      error: error.message
+    });
+  }
+}
+
+/**
+ * Read individual registers once (testing endpoint)
+ */
+async function readIndividualRegistersOnce(req, res) {
+  try {
+    const { registers } = req.body;
+    
+    if (!registers || !Array.isArray(registers) || registers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registers array is required in request body. Example: {"registers": [300, 301, 302]}'
+      });
+    }
+    
+    // Validate register numbers
+    for (const reg of registers) {
+      if (!Number.isInteger(reg) || reg < 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid register address: ${reg}. Must be non-negative integers.`
+        });
+      }
+    }
+    
+    const results = await readIndividualInputRegisters(registers);
+    
+    res.json({
+      success: true,
+      message: 'Individual register read completed',
+      results
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error reading individual registers',
+      error: error.message
+    });
+  }
+}
+
 module.exports = {
   startMqttPolling,
   stopMqttPolling,
@@ -466,5 +687,9 @@ module.exports = {
   publishSingle,
   getMqttConnection,
   getLatestMqttData,
-  autoStartInputRegisterPolling
+  autoStartInputRegisterPolling,
+  readIndividualInputRegisters,
+  startIndividualRegisterPolling,
+  startIndividualMqttPolling,
+  readIndividualRegistersOnce
 };

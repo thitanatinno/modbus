@@ -111,7 +111,40 @@ The server now automatically starts reading input registers and publishing to MQ
 ✅ **MQTT Connection** - Connects to MQTT broker  
 ✅ **Auto Polling** - Starts reading specified registers  
 ✅ **MQTT Publishing** - Publishes data to topics like `hyxi_meter/device-1/input-registers`  
-✅ **Error Recovery** - Auto-reconnects if connections drop
+✅ **Error Recovery** - Auto-reconnects if connections drop  
+✅ **Fault Tolerance** - Individual register reads prevent total failure if one register fails
+
+## 🛡️ Fault Tolerant Reading
+
+### Problem with Batch Reading:
+When reading multiple registers in one batch (e.g., registers 300-612), if **any single register** fails or doesn't respond, the **entire read operation fails**. This means you get no data at all.
+
+### Solution - Individual Register Reading:
+The new implementation reads each register **individually**, so:
+- ✅ If register 300 fails, you still get data from 301, 302, etc.
+- ✅ Partial failures are handled gracefully
+- ✅ You can see exactly which registers are problematic
+- ✅ MQTT still publishes successful reads
+
+### Configuration:
+```bash
+# Enable individual reads (default: true)
+AUTO_START_INDIVIDUAL_READS=true   # Fault tolerant but slower
+AUTO_START_INDIVIDUAL_READS=false  # Faster but fails completely if any register fails
+```
+
+### Manual API Usage:
+```bash
+# Test individual register reading
+curl -X POST http://localhost:3000/api/mqtt-polling/read-individual \
+  -H "Content-Type: application/json" \
+  -d '{"registers": [300, 301, 302, 311, 312, 313]}'
+
+# Start individual register polling
+curl -X POST http://localhost:3000/api/mqtt-polling/start-individual \
+  -H "Content-Type: application/json" \
+  -d '{"registers": [300, 301, 302, 311, 312, 313], "interval": 5000}'
+```
 
 ## Reading Different Register Types
 

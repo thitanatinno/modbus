@@ -54,4 +54,19 @@ router.post('/publish', mqttPollingController.publishSingle);
  */
 router.get('/connection', mqttPollingController.getMqttConnection);
 
+/**
+ * POST /api/mqtt-polling/start-individual
+ * Start individual register MQTT polling (fault tolerant)
+ * Required body: { "registers": [300, 301, 302, 311, 312] }
+ * Optional body: { "interval": 5000, "deviceId": "device-1" }
+ */
+router.post('/start-individual', mqttPollingController.startIndividualMqttPolling);
+
+/**
+ * POST /api/mqtt-polling/read-individual
+ * Read individual registers once (testing endpoint)
+ * Required body: { "registers": [300, 301, 302, 311, 312] }
+ */
+router.post('/read-individual', mqttPollingController.readIndividualRegistersOnce);
+
 module.exports = router;

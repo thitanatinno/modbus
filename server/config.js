@@ -48,6 +48,7 @@ module.exports = {
       : [300,301,302,311,312,313,316,317,406,604,605,606,610,611,612],
     interval: parseInt(process.env.AUTO_START_INTERVAL) || 5000,
     deviceId: process.env.AUTO_START_DEVICE_ID || 'device-1',
-    type: process.env.AUTO_START_TYPE || 'input' // coils, input, holding, both
+    type: process.env.AUTO_START_TYPE || 'input', // coils, input, holding, both
+    individualReads: process.env.AUTO_START_INDIVIDUAL_READS !== 'false' // Default true for better error handling
   }
 };
