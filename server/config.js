@@ -23,5 +23,20 @@ module.exports = {
     registerAddress: parseInt(process.env.REGISTER_ADDRESS) || 0,
     registerCount: parseInt(process.env.REGISTER_COUNT) || 10,
     interval: parseInt(process.env.POLLING_INTERVAL) || 5000
+  },
+
+  // MQTT configuration
+  mqtt: {
+    host: process.env.MQTT_HOST || 'localhost',
+    port: parseInt(process.env.MQTT_PORT) || 1883,
+    username: process.env.MQTT_USERNAME || null,
+    password: process.env.MQTT_PASSWORD || null,
+    clientId: process.env.MQTT_CLIENT_ID || null, // Will auto-generate if null
+    baseTopic: process.env.MQTT_BASE_TOPIC || 'modbus/meter',
+    qos: parseInt(process.env.MQTT_QOS) || 0,
+    retain: process.env.MQTT_RETAIN === 'true' || false,
+    connectTimeout: parseInt(process.env.MQTT_CONNECT_TIMEOUT) || 30000,
+    reconnectPeriod: parseInt(process.env.MQTT_RECONNECT_PERIOD) || 1000,
+    keepalive: parseInt(process.env.MQTT_KEEPALIVE) || 60
   }
 };

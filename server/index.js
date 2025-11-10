@@ -1,11 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const { connect, disconnect } = require('./src/utils/modbusClient');
+const mqttClient = require('./src/utils/mqttClient');
 
 // Import routes
 const readRoutes = require('./src/routes/read');
 const writeRoutes = require('./src/routes/write');
 const pollingRoutes = require('./src/routes/polling');
+const mqttPollingRoutes = require('./src/routes/mqttPolling');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,6 +35,7 @@ app.use((req, res, next) => {
 app.use('/api/read', readRoutes);
 app.use('/api/write', writeRoutes);
 app.use('/api/polling', pollingRoutes);
+app.use('/api/mqtt-polling', mqttPollingRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -63,6 +66,15 @@ app.get('/', (req, res) => {
         'GET /api/polling/status': 'Get polling status',
         'GET /api/polling/logs': 'Get real-time logs (optional query: ?limit=50)',
         'DELETE /api/polling/logs': 'Clear all logs'
+      },
+      'mqtt-polling': {
+        'POST /api/mqtt-polling/start/:type/:startAddress/:endAddress': 'Start MQTT polling loop by type (coils, input, holding, both) - Optional body: {interval?: number, deviceId?: string}',
+        'POST /api/mqtt-polling/stop': 'Stop MQTT polling loop',
+        'GET /api/mqtt-polling/status': 'Get MQTT polling and connection status',
+        'GET /api/mqtt-polling/logs': 'Get MQTT polling logs (optional query: ?limit=50)',
+        'DELETE /api/mqtt-polling/logs': 'Clear all MQTT logs',
+        'POST /api/mqtt-polling/publish': 'Manually publish data to MQTT - Body: {topic: string, data: object, options?: object}',
+        'GET /api/mqtt-polling/connection': 'Get MQTT connection status'
       }
     }
   });
@@ -90,12 +102,14 @@ app.use((err, req, res, next) => {
 process.on('SIGINT', async () => {
   console.log('\nShutting down gracefully...');
   await disconnect();
+  await mqttClient.disconnect();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   console.log('\nShutting down gracefully...');
   await disconnect();
+  await mqttClient.disconnect();
   process.exit(0);
 });
 
