@@ -14,7 +14,7 @@ module.exports = {
   // Modbus configuration
   modbus: {
     slaveId: parseInt(process.env.MODBUS_SLAVE_ID) || 1,
-    timeout: parseInt(process.env.MODBUS_TIMEOUT) || 1000,
+    timeout: parseInt(process.env.MODBUS_TIMEOUT) || 10000,
     retries: parseInt(process.env.MODBUS_RETRIES) || 3
   },
 
@@ -22,7 +22,7 @@ module.exports = {
   reading: {
     registerAddress: parseInt(process.env.REGISTER_ADDRESS) || 0,
     registerCount: parseInt(process.env.REGISTER_COUNT) || 10,
-    interval: parseInt(process.env.POLLING_INTERVAL) || 5000
+    interval: parseInt(process.env.POLLING_INTERVAL) || 60000
   },
 
   // MQTT configuration
