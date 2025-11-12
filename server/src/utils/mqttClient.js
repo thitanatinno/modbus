@@ -1,5 +1,6 @@
 const mqtt = require('mqtt');
 const config = require('../../config');
+const { getThaiTimestamp } = require('./dateUtils');
 
 let client = null;
 let isConnected = false;
@@ -113,7 +114,7 @@ async function publish(topic, data, options = {}) {
     }
 
     const payload = JSON.stringify({
-      timestamp: new Date().toISOString(),
+      timestamp: getThaiTimestamp(),
       ...data
     });
 

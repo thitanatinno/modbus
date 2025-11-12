@@ -4,6 +4,7 @@ const config = require('./config');
 const { connect, disconnect } = require('./src/utils/modbusClient');
 const mqttClient = require('./src/utils/mqttClient');
 const { autoStartInputRegisterPolling } = require('./src/controllers/mqttPollingController');
+const { getThaiTimestamp } = require('./src/utils/dateUtils');
 
 // Import routes
 const readRoutes = require('./src/routes/read');
@@ -29,7 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  console.log(`[${getThaiTimestamp()}] ${req.method} ${req.path}`);
   next();
 });
 
@@ -43,7 +44,7 @@ app.use('/api/mqtt-polling', mqttPollingRoutes);
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok',
-    timestamp: new Date().toISOString()
+    timestamp: getThaiTimestamp()
   });
 });
 

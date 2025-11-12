@@ -1,4 +1,5 @@
 const { client } = require('./modbusClient');
+const { getThaiTimestamp } = require('./dateUtils');
 
 /**
  * Read input registers from Modbus device
@@ -10,7 +11,7 @@ async function readInputRegisters(startAddress, count) {
   try {
     const data = await client.readInputRegisters(startAddress, count);
     
-    const timestamp = new Date().toISOString();
+    const timestamp = getThaiTimestamp();
     console.log(`[${timestamp}] Read input registers successful:`);
     console.log(`  Address Range: ${startAddress} - ${startAddress + count - 1}`);
     
@@ -34,7 +35,7 @@ async function readInputRegisters(startAddress, count) {
     return {
       success: false,
       error: error.message,
-      timestamp: new Date().toISOString(),
+      timestamp: getThaiTimestamp(),
       startAddress,
       count
     };

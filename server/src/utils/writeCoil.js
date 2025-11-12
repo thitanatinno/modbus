@@ -1,4 +1,5 @@
 const { client } = require('./modbusClient');
+const { getThaiTimestamp } = require('./dateUtils');
 
 /**
  * Write single coil to Modbus device
@@ -10,7 +11,7 @@ async function writeCoil(address, value) {
   try {
     await client.writeCoil(address, value);
     
-    const timestamp = new Date().toISOString();
+    const timestamp = getThaiTimestamp();
     console.log(`[${timestamp}] Write coil successful:`);
     console.log(`  Address: ${address}`);
     console.log(`  Value: ${value}`);
@@ -27,7 +28,7 @@ async function writeCoil(address, value) {
     return {
       success: false,
       error: error.message,
-      timestamp: new Date().toISOString(),
+      timestamp: getThaiTimestamp(),
       address,
       value
     };

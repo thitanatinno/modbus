@@ -1,5 +1,6 @@
 const { client } = require('./modbusClient');
 const config = require('../../config');
+const { getThaiTimestamp } = require('./dateUtils');
 
 /**
  * Read coils (discrete outputs) from Modbus device
@@ -17,7 +18,7 @@ async function readCoils(startAddress, count) {
     
     const data = await client.readCoils(startAddress, count);
     
-    const timestamp = new Date().toISOString();
+    const timestamp = getThaiTimestamp();
     console.log(`[${timestamp}] Read coils successful:`);
     console.log(`  Address Range: ${startAddress} - ${startAddress + count - 1}`);
     console.log('  Coil values:', data.data);
@@ -35,7 +36,7 @@ async function readCoils(startAddress, count) {
     return {
       success: false,
       error: error.message,
-      timestamp: new Date().toISOString(),
+      timestamp: getThaiTimestamp(),
       startAddress,
       count
     };

@@ -2,6 +2,7 @@ const readCoils = require('../utils/readCoils');
 const readInputRegisters = require('../utils/readInputRegisters');
 const readHoldingRegisters = require('../utils/readHoldingRegisters');
 const config = require('../../config');
+const { getThaiTimestamp } = require('../utils/dateUtils');
 
 // State management for polling
 let pollingInterval = null;
@@ -16,7 +17,7 @@ const MAX_LOGS = 100;
 
 function addLog(type, message, data = null) {
   const logEntry = {
-    timestamp: new Date().toISOString(),
+    timestamp: getThaiTimestamp(),
     type,
     message,
     data

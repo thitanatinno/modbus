@@ -1,4 +1,5 @@
 const { client } = require('./modbusClient');
+const { getThaiTimestamp } = require('./dateUtils');
 
 /**
  * Write single holding register to Modbus device
@@ -10,7 +11,7 @@ async function writeRegister(address, value) {
   try {
     await client.writeRegister(address, value);
     
-    const timestamp = new Date().toISOString();
+    const timestamp = getThaiTimestamp();
     console.log(`[${timestamp}] Write register successful:`);
     console.log(`  Address: ${address}`);
     console.log(`  Value: ${value} (0x${value.toString(16).toUpperCase().padStart(4, '0')})`);
@@ -27,7 +28,7 @@ async function writeRegister(address, value) {
     return {
       success: false,
       error: error.message,
-      timestamp: new Date().toISOString(),
+      timestamp: getThaiTimestamp(),
       address,
       value
     };

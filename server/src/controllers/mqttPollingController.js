@@ -3,6 +3,7 @@ const readInputRegisters = require('../utils/readInputRegisters');
 const readHoldingRegisters = require('../utils/readHoldingRegisters');
 const mqttClient = require('../utils/mqttClient');
 const config = require('../../config');
+const { getThaiTimestamp } = require('../utils/dateUtils');
 
 // State management for MQTT polling
 let mqttPollingInterval = null;
@@ -17,7 +18,7 @@ const MAX_MQTT_LOGS = 100;
 
 function addMqttLog(type, message, data = null) {
   const logEntry = {
-    timestamp: new Date().toISOString(),
+    timestamp: getThaiTimestamp(),
     type,
     message,
     data
@@ -176,7 +177,7 @@ function getLatestMqttData() {
 async function readIndividualInputRegisters(registers) {
   const results = {
     success: true,
-    timestamp: new Date().toISOString(),
+    timestamp: getThaiTimestamp(),
     registers: {},
     successCount: 0,
     failureCount: 0,
@@ -206,7 +207,7 @@ async function readIndividualInputRegisters(registers) {
       results.registers[registerAddr] = {
         success: false,
         error: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: getThaiTimestamp()
       };
       results.failureCount++;
       results.errors.push(`Register ${registerAddr}: ${error.message}`);

@@ -1,4 +1,5 @@
 const { client } = require('./modbusClient');
+const { getThaiTimestamp } = require('./dateUtils');
 
 /**
  * Write multiple holding registers to Modbus device
@@ -10,7 +11,7 @@ async function writeRegisters(startAddress, values) {
   try {
     await client.writeRegisters(startAddress, values);
     
-    const timestamp = new Date().toISOString();
+    const timestamp = getThaiTimestamp();
     console.log(`[${timestamp}] Write multiple registers successful:`);
     console.log(`  Address Range: ${startAddress} - ${startAddress + values.length - 1}`);
     
@@ -34,7 +35,7 @@ async function writeRegisters(startAddress, values) {
     return {
       success: false,
       error: error.message,
-      timestamp: new Date().toISOString(),
+      timestamp: getThaiTimestamp(),
       startAddress,
       count: values.length,
       values
