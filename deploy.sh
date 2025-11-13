@@ -80,9 +80,9 @@ check_ssh() {
     fi
 }
 
-# Function to configure firewall for ports 3000 and 80
+# Function to configure firewall for ports 5000 and 80
 configure_firewall() {
-    print_info "=== Configuring firewall for ports 3000 (API) and 80 (HTTP) ==="
+    print_info "=== Configuring firewall for ports 5000 (API) and 80 (HTTP) ==="
     
     # Check if ufw is installed
     if eval "${SSH_CMD} ${PI_SSH} 'command -v ufw'" &>/dev/null; then
@@ -94,16 +94,16 @@ configure_firewall() {
         if echo "$UFW_STATUS" | grep -qi "active"; then
             print_info "UFW is active, checking ports..."
             
-            # Check if port 3000 is already allowed
-            if eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S ufw status'" | grep -q "3000"; then
-                print_success "Port 3000 is already allowed in UFW"
+            # Check if port 5000 is already allowed
+            if eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S ufw status'" | grep -q "5000"; then
+                print_success "Port 5000 is already allowed in UFW"
             else
-                print_info "Opening port 3000 in UFW..."
-                eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S ufw allow 3000/tcp'"
+                print_info "Opening port 5000 in UFW..."
+                eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S ufw allow 5000/tcp'"
                 if [ $? -eq 0 ]; then
-                    print_success "Port 3000 opened successfully in UFW"
+                    print_success "Port 5000 opened successfully in UFW"
                 else
-                    print_warning "Failed to open port 3000 in UFW"
+                    print_warning "Failed to open port 5000 in UFW"
                 fi
             fi
             
@@ -128,11 +128,11 @@ configure_firewall() {
         # Check if iptables has rules
         IPTABLES_RULES=$(eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S iptables -L -n'" 2>/dev/null)
         
-        if echo "$IPTABLES_RULES" | grep -q "3000"; then
-            print_success "Port 3000 appears to be configured in iptables"
+        if echo "$IPTABLES_RULES" | grep -q "5000"; then
+            print_success "Port 5000 appears to be configured in iptables"
         else
-            print_info "Adding iptables rule for port 3000..."
-            eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S iptables -A INPUT -p tcp --dport 3000 -j ACCEPT'"
+            print_info "Adding iptables rule for port 5000..."
+            eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S iptables -A INPUT -p tcp --dport 5000 -j ACCEPT'"
         fi
         
         if echo "$IPTABLES_RULES" | grep -q "80"; then
@@ -171,15 +171,15 @@ check_api_access() {
     print_info "Waiting for application to start (5 seconds)..."
     sleep 5
     
-    # Check if port 3000 is listening on the Pi
-    print_info "Checking if port 3000 is listening on Raspberry Pi..."
-    PORT_CHECK=$(eval "${SSH_CMD} ${PI_SSH} 'ss -tulpn | grep :3000 || netstat -tulpn | grep :3000'" 2>/dev/null)
+    # Check if port 5000 is listening on the Pi
+    print_info "Checking if port 5000 is listening on Raspberry Pi..."
+    PORT_CHECK=$(eval "${SSH_CMD} ${PI_SSH} 'ss -tulpn | grep :5000 || netstat -tulpn | grep :5000'" 2>/dev/null)
     
     if [ -n "$PORT_CHECK" ]; then
-        print_success "Port 3000 is listening on Raspberry Pi"
+        print_success "Port 5000 is listening on Raspberry Pi"
         echo "$PORT_CHECK"
     else
-        print_warning "Port 3000 does not appear to be listening"
+        print_warning "Port 5000 does not appear to be listening"
         print_info "Checking Docker container status..."
         eval "${SSH_CMD} ${PI_SSH} 'cd ${REMOTE_PATH} && docker compose ps'"
         return 1
@@ -187,7 +187,7 @@ check_api_access() {
     
     # Try to access the API from the remote Pi itself (localhost test)
     print_info "Testing API access from localhost on Raspberry Pi..."
-    LOCALHOST_TEST=$(eval "${SSH_CMD} ${PI_SSH} 'curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/health --max-time 5'" 2>/dev/null)
+    LOCALHOST_TEST=$(eval "${SSH_CMD} ${PI_SSH} 'curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5000/health --max-time 5'" 2>/dev/null)
     
     if [ "$LOCALHOST_TEST" = "200" ]; then
         print_success "API is accessible on localhost (HTTP 200)"
@@ -198,16 +198,16 @@ check_api_access() {
     # Try to access from the machine running this script
     print_info "Testing remote API access from this machine..."
     if command -v curl &> /dev/null; then
-        REMOTE_TEST=$(curl -s -o /dev/null -w "%{http_code}" "http://${PI_IP}:3000/health" --max-time 10 2>/dev/null)
+        REMOTE_TEST=$(curl -s -o /dev/null -w "%{http_code}" "http://${PI_IP}:5000/health" --max-time 10 2>/dev/null)
         
         if [ "$REMOTE_TEST" = "200" ]; then
             print_success "✅ API is accessible remotely from this machine!"
-            print_success "API URL: http://${PI_IP}:3000"
+            print_success "API URL: http://${PI_IP}:5000"
             echo ""
             print_info "You can test the API with:"
-            echo "  curl http://${PI_IP}:3000/"
-            echo "  curl http://${PI_IP}:3000/health"
-            echo "  curl http://${PI_IP}:3000/api/coils/latest"
+            echo "  curl http://${PI_IP}:5000/"
+            echo "  curl http://${PI_IP}:5000/health"
+            echo "  curl http://${PI_IP}:5000/api/coils/latest"
             echo ""
         else
             print_warning "Remote API test returned: ${REMOTE_TEST}"
@@ -216,16 +216,16 @@ check_api_access() {
             echo "  2. Docker network configuration"
             echo "  3. Application not fully started yet"
             echo ""
-            print_info "Try accessing: http://${PI_IP}:3000/health"
+            print_info "Try accessing: http://${PI_IP}:5000/health"
         fi
     else
         print_warning "curl not found on this machine, cannot test remote access"
-        print_info "Please manually test: http://${PI_IP}:3000/health"
+        print_info "Please manually test: http://${PI_IP}:5000/health"
     fi
     
     # Show additional network information
     print_info "Network binding information:"
-    eval "${SSH_CMD} ${PI_SSH} 'cd ${REMOTE_PATH} && docker compose exec -T meter-mqtt netstat -tulpn 2>/dev/null | grep :3000 || ss -tulpn | grep :3000'" 2>/dev/null || print_warning "Could not retrieve network binding info"
+    eval "${SSH_CMD} ${PI_SSH} 'cd ${REMOTE_PATH} && docker compose exec -T meter-mqtt netstat -tulpn 2>/dev/null | grep :5000 || ss -tulpn | grep :5000'" 2>/dev/null || print_warning "Could not retrieve network binding info"
     
     return 0
 }
@@ -306,10 +306,10 @@ build_and_deploy_dashboard() {
     print_info "Deploying dashboard to Raspberry Pi..."
     
     # Remove old dashboard on server
-    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S rm -rf /var/www/html/dashboard'" || true
+    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S rm -rf /var/www/html/dashboard-local'" || true
     
     # Copy dashboard to server
-    eval "${RSYNC_CMD} -av --delete client/dashboard/ ${PI_SSH}:/tmp/dashboard/"
+    eval "${RSYNC_CMD} -av --delete client/dashboard/ ${PI_SSH}:/tmp/dashboard-local/"
     
     if [ $? -ne 0 ]; then
         print_error "Failed to copy dashboard to server"
@@ -317,18 +317,18 @@ build_and_deploy_dashboard() {
     fi
     
     # Move from tmp to final location with sudo
-    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S mv /tmp/dashboard /var/www/html/dashboard'"
-    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S chown -R www-data:www-data /var/www/html/dashboard'"
-    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S chmod -R 755 /var/www/html/dashboard'"
+    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S mv /tmp/dashboard-local /var/www/html/dashboard-local'"
+    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S chown -R www-data:www-data /var/www/html/dashboard-local'"
+    eval "${SSH_CMD} ${PI_SSH} 'echo ${PI_PASSWORD} | sudo -S chmod -R 755 /var/www/html/dashboard-local'"
     
     if [ $? -eq 0 ]; then
-        print_success "Dashboard deployed successfully to /var/www/html/dashboard"
+        print_success "Dashboard deployed successfully to /var/www/html/dashboard-local"
         
         # Get Raspberry Pi's IP address
         PI_IP=$(eval "${SSH_CMD} ${PI_SSH} \"hostname -I | awk '{print \$1}'\"" 2>/dev/null | tr -d '[:space:]')
         
         if [ -n "$PI_IP" ]; then
-            print_success "Dashboard accessible at: http://${PI_IP}/dashboard"
+            print_success "Dashboard accessible at: http://${PI_IP}/dashboard-local"
         fi
     else
         print_error "Failed to deploy dashboard"

@@ -3,6 +3,11 @@
 # Development helper script
 # Quick commands to start server or client
 
+# Load environment variables from .env
+if [ -f .env ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
 case "$1" in
     server)
         echo "🚀 Starting server..."
@@ -10,6 +15,7 @@ case "$1" in
         ;;
     client)
         echo "🚀 Starting client..."
+        echo "Using API Base URL: ${REACT_APP_API_BASE_URL}"
         cd client && npm install && npm start
         ;;
     both)
@@ -20,6 +26,7 @@ case "$1" in
         echo "Server PID: $SERVER_PID"
         
         echo "Starting client..."
+        echo "Using API Base URL: ${REACT_APP_API_BASE_URL}"
         cd ../client && npm install && npm start
         ;;
     install)
