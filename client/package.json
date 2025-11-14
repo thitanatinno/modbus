@@ -2,7 +2,7 @@
   "name": "power-meter-dashboard",
   "version": "1.0.0",
   "private": true,
-  "homepage": "/dashboard",
+  "homepage": "/dashboard-local",
   "description": "React dashboard for Modbus power meter monitoring",
   "author": "",
   "license": "ISC",

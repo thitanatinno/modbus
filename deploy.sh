@@ -266,8 +266,24 @@ build_and_deploy_dashboard() {
         return 1
     fi
     
+    # Ensure .env file exists in root
+    if [ ! -f .env ]; then
+        print_error ".env file not found in root directory!"
+        return 1
+    fi
+    
+    # Copy .env to client directory to ensure React build picks it up
+    print_info "Copying .env to client directory..."
+    cp .env client/.env
+    if [ $? -eq 0 ]; then
+        print_success ".env copied to client directory"
+    else
+        print_error "Failed to copy .env to client directory"
+        return 1
+    fi
+    
     # Build React app locally
-    print_info "Building React app locally..."
+    print_info "Building React app locally with environment variables..."
     cd client
     
     # Install dependencies if needed
@@ -459,18 +475,27 @@ init_deployment() {
         fi
     fi
     
-    # Ensure .env file is uploaded to server (redundant check)
+    # Ensure .env file is uploaded to server (critical for both server and client)
     print_info "Ensuring .env file is on server..."
     if [ -f .env ]; then
+        # Upload to server directory
         eval "${SCP_CMD} .env ${PI_SSH}:${REMOTE_PATH}/server/.env"
+        if [ $? -eq 0 ]; then
+            print_success ".env file uploaded to server directory"
+        else
+            print_error "Failed to upload .env file to server directory"
+            exit 1
+        fi
+        
+        # Also upload to root for future reference
+        eval "${SCP_CMD} .env ${PI_SSH}:${REMOTE_PATH}/.env"
+        if [ $? -eq 0 ]; then
+            print_success ".env file uploaded to root directory"
+        else
+            print_warning "Failed to upload .env file to root directory"
+        fi
     else
         print_error ".env file not found locally!"
-        exit 1
-    fi
-    if [ $? -eq 0 ]; then
-        print_success ".env file uploaded successfully"
-    else
-        print_error "Failed to upload .env file"
         exit 1
     fi
     
@@ -559,17 +584,28 @@ update_deployment() {
         fi
     fi
     
-    # Always upload .env file during update (ensure it's there)
+    # Always upload .env file during update (critical for both server and client)
     print_info "Ensuring latest .env file is on server..."
     if [ -f .env ]; then
+        # Upload to server directory
         eval "${SCP_CMD} .env ${PI_SSH}:${REMOTE_PATH}/server/.env"
         if [ $? -eq 0 ]; then
-            print_success ".env file updated successfully"
+            print_success ".env file updated in server directory"
         else
-            print_warning "Failed to update .env file (continuing anyway)"
+            print_error "Failed to update .env file in server directory"
+            exit 1
+        fi
+        
+        # Also upload to root for future reference
+        eval "${SCP_CMD} .env ${PI_SSH}:${REMOTE_PATH}/.env"
+        if [ $? -eq 0 ]; then
+            print_success ".env file updated in root directory"
+        else
+            print_warning "Failed to update .env file in root directory"
         fi
     else
-        print_warning ".env file not found locally!"
+        print_error ".env file not found locally!"
+        exit 1
     fi
     
     # Rebuild and restart container
