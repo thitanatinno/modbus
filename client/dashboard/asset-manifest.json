@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/dashboard-local/static/css/main.afb31204.css",
-    "main.js": "/dashboard-local/static/js/main.cd80d82b.js",
+    "main.js": "/dashboard-local/static/js/main.2c96c79f.js",
     "index.html": "/dashboard-local/index.html",
     "main.afb31204.css.map": "/dashboard-local/static/css/main.afb31204.css.map",
-    "main.cd80d82b.js.map": "/dashboard-local/static/js/main.cd80d82b.js.map"
+    "main.2c96c79f.js.map": "/dashboard-local/static/js/main.2c96c79f.js.map"
   },
   "entrypoints": [
     "static/css/main.afb31204.css",
-    "static/js/main.cd80d82b.js"
+    "static/js/main.2c96c79f.js"
   ]
 }
