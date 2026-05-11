@@ -4,8 +4,8 @@ require('dotenv').config();
 module.exports = {
   // Serial port configuration
   serial: {
-    port: process.env.SERIAL_PORT || '/dev/ttyUSB0',
-    baudRate: parseInt(process.env.BAUD_RATE) || 9600,
+    port: process.env.SERIAL_PORT || '/dev/cu.usbserial-AB0LYM6I',
+    baudRate: parseInt(process.env.BAUD_RATE) || 115200,
     dataBits: parseInt(process.env.DATA_BITS) || 8,
     stopBits: parseInt(process.env.STOP_BITS) || 1,
     parity: process.env.PARITY || 'none'

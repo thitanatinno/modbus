@@ -7,11 +7,9 @@ import { MeterCard, LoadingSpinner, RegisterControl } from "../../components/com
 export default function Dashboard() {
   const { stateDashboard, setDashboard } = useDashboard();
   const handlers = DashboardHandler(stateDashboard, setDashboard);
-
   // Initialize on mount and cleanup on unmount
   useEffect(() => {
-    handlers.initialize();
-    
+    handlers.initialize();   
     // Cleanup polling on unmount
     return () => {
       handlers.cleanup();

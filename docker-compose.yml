@@ -2,47 +2,62 @@ version: '3.8'
 
 services:
   meter-mqtt:
-    build: 
+    build:
       context: ./server
-      args:
-        - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
     container_name: meter-mqtt
     restart: unless-stopped
-    
+
     # Device mapping for RS485 serial port
     devices:
       - /dev/ttyUSB0:/dev/ttyUSB0  # Change to your serial port
-    
+
     # Privileged mode for full device access (use with caution)
     privileged: true
-    
-    # Load environment variables from .env file
+
+    # Centralized env file
     env_file:
       - .env
-    
+
     # Environment variables (can override .env)
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - TZ=${TZ:-Asia/Bangkok}
       - PORT=${PORT:-5000}
-    
+
     # Volumes for configuration and logs
     volumes:
       - ./server/config.js:/app/config.js:ro  # Mount config as read-only
-      - ./server/logs:/app/logs                # Optional: if you add logging
-    
+      - ./server/logs:/app/logs
+
     # Logging configuration
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-    
+
     # Network mode - using 'host' mode allows direct access to serial devices
     # and makes port 5000 directly accessible on the host
-    # If you prefer bridge mode, comment out 'network_mode: host' and uncomment 'ports' below
     network_mode: host
-    
-    # Port mapping (only needed if NOT using network_mode: host)
-    # ports:
-    #   - "5000:5000"
+
+  meter-dashboard:
+    build:
+      context: ./client
+      args:
+        - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
+    container_name: meter-dashboard
+    restart: unless-stopped
+
+    # Centralized env file
+    env_file:
+      - .env
+
+    # Use host networking (consistent with meter-mqtt, required for WSL2/Docker Desktop)
+    network_mode: host
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
